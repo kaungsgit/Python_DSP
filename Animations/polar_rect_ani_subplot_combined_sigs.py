@@ -1,3 +1,9 @@
+"""
+@author: Kaung Myat San Oo
+Script for understanding rotating phasors, negative frequency in DS concepts
+
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
@@ -26,7 +32,7 @@ continuous = True
 
 x = np.arange(fs)
 
-phi = pi/4
+phi = pi / 4
 
 cmplx_exps = [np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x]),
               np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1) * (i / fs) + phi)) for i in x])

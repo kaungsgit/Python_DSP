@@ -1,8 +1,12 @@
 """
 @author: Kaung Myat San Oo
-Script for understanding rotating phasors, negative frequency in DS concepts
+Script for understanding rotating phasors, negative frequency in DSP concepts
+
 
 """
+
+# @todo
+# remove complex arrays and use complex variable type
 
 import matplotlib.pyplot as plt
 import numpy as np

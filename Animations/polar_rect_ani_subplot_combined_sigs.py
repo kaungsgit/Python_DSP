@@ -36,7 +36,7 @@ continuous = True
 
 x = np.arange(fs)
 
-phi = pi / 4
+phi = 0
 
 cmplx_exps = [np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x]),
               np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1) * (i / fs) + phi)) for i in x])
@@ -192,6 +192,10 @@ class ScopeRectCmbd(object):
             self.sig_lines_r_cmbd[0].set_data(self.t_data, self.y_data_cmbd[0])
             self.sig_lines_r_cmbd[1].set_data(self.t_data, self.y_data_cmbd[1])
 
+            self.sig_lines_r_cmbd[0].set_label('In-phase or Real')
+            self.sig_lines_r_cmbd[1].set_label('Quadrature or Imag')
+
+            self.ax_r.legend()
         # print(list(flatten(self.sig_lines_r)))
         return list(flatten(self.sig_lines_r + self.sig_lines_r_cmbd))
 
@@ -396,17 +400,19 @@ def onClick(event):
 
 
 fig = plt.figure(1, figsize=(10, 10))
-ax_rect = plt.subplot(4, 1, 1)
-ax_polar = plt.subplot(4, 1, 2, projection='polar')
-ax_polar_cmbd = plt.subplot(4, 1, 3, projection='polar')
-ax_rect_cmbd = plt.subplot(4, 1, 4)
+# ax_rect = plt.subplot(4, 1, 1)
+# ax_polar = plt.subplot(4, 1, 2, projection='polar')
+ax_polar_cmbd = plt.subplot(2, 1, 1, projection='polar')
+
+
+ax_rect_cmbd = plt.subplot(2, 1, 2)
 
 # scope = ScopeRect(len(cmplx_exps))
 scope_main = Scope(len(cmplx_exps))
 
 # scope1 = ScopePolar(len(cmplx_exps))
 
-interval = 10
+interval = 100
 
 fig.canvas.mpl_connect('key_press_event', onClick)
 

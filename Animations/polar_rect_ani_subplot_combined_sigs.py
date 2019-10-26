@@ -12,6 +12,8 @@ Press any keyboard key to pause the animation
 # remove complex arrays and use complex variable type
 # find out why the update is slow
 # reorganize the object oriented scheme
+# make sure the legends and line colors match between rect and polar plot
+# instead of spinning with respect to origin, add vector addition spinning
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,7 +43,9 @@ x = np.arange(fs)
 
 phi = 0
 
-cmplx_exps = [np.ones(fs),
+# np.ones(fs),
+
+cmplx_exps = [
               np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x]),
               np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1) * (i / fs) + phi)) for i in x])
               ]
@@ -150,7 +154,7 @@ class ScopePolarCmbd(object):
         for _ in range(num_sigs):
             self.sig_lines_p.append(
                 [self.ax_p.plot([], [], fstr, linewidth=lw)[0] for _, fstr, lw in
-                 zip(range(4), [':', '.', '-', '-'], [3, 1.5, 1.5, 1.5])])
+                 zip(range(4), [':', '-', '-', '-'], [3, 1.5, 1.5, 1.5])])
             self.mag_accu.append([0])
             self.theta_accu.append([0])
 
@@ -193,6 +197,9 @@ class ScopePolarCmbd(object):
 
                 # phasor edge tracing
                 # sig_line_p[1].set_data(theta_accu, mag_accu)
+
+                sig_line_p[1].set_data([pi/4, 0], [1, 0.5])
+
 
                 # these will draw the real and imag component of each signal in cmplx_exps on the polar plot
                 # usually commented out to avoid clutter

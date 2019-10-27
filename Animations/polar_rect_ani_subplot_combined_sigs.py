@@ -46,9 +46,9 @@ phi = 0
 # np.ones(fs),
 
 cmplx_exps = [
-              np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x]),
-              np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1) * (i / fs) + phi)) for i in x])
-              ]
+    np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x]),
+    np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1) * (i / fs) + phi)) for i in x])
+]
 
 
 # cmplx_exps = [np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x])
@@ -108,8 +108,8 @@ class ScopeRectCmbd(object):
             self.t_data.append(t)
 
             for emitted_sig, sig_line_r, y_data_1 in zip(emitted, self.sig_lines_r, self.y_data):
-                y_data_1[0].append(emitted_sig[0])
-                y_data_1[1].append(emitted_sig[1])
+                y_data_1[0].append(emitted_sig.real)
+                y_data_1[1].append(emitted_sig.imag)
 
                 # these will show the individual line imag and real parts of each signal in cmplx_exps
                 # these are usually commented out to avoid clutter
@@ -123,8 +123,8 @@ class ScopeRectCmbd(object):
             imag_list = []
 
             for emitted_sig in emitted:
-                real_list.append(emitted_sig[0])
-                imag_list.append(emitted_sig[1])
+                real_list.append(emitted_sig.real)
+                imag_list.append(emitted_sig.imag)
 
             real_sum = sum(real_list)
             imag_sum = sum(imag_list)
@@ -168,8 +168,7 @@ class ScopePolarCmbd(object):
                                                                  self.theta_accu):
             if not pause:
 
-                input_num = complex(emitted_sig[0], emitted_sig[1])  # stored as 1+2j
-                mag, theta = cm.polar(input_num)
+                mag, theta = cm.polar(emitted_sig)
                 # print(theta)
                 mag_accu.append(mag)
                 theta_accu.append(theta)
@@ -198,8 +197,7 @@ class ScopePolarCmbd(object):
                 # phasor edge tracing
                 # sig_line_p[1].set_data(theta_accu, mag_accu)
 
-                sig_line_p[1].set_data([pi/4, 0], [1, 0.5])
-
+                sig_line_p[1].set_data([pi / 4, 0], [1, 0.5])
 
                 # these will draw the real and imag component of each signal in cmplx_exps on the polar plot
                 # usually commented out to avoid clutter
@@ -211,17 +209,7 @@ class ScopePolarCmbd(object):
         # drawing of combined output
         if not pause:
 
-            real_list = []
-            imag_list = []
-
-            for emitted_sig in emitted:
-                real_list.append(emitted_sig[0])
-                imag_list.append(emitted_sig[1])
-
-            real_sum = sum(real_list)
-            imag_sum = sum(imag_list)
-
-            mag, theta = cm.polar(complex(real_sum, imag_sum))
+            mag, theta = cm.polar(sum(emitted))
 
             # adjust polar r limit
             if mag > self.ax_p.get_rmax():
@@ -271,9 +259,7 @@ def sine_emitter():
         if not pause:
             cmplx_exp_real_imag.clear()
             for cmplx_exp in cmplx_exps:
-                real = cmplx_exp.real[i]
-                imag = cmplx_exp.imag[i]
-                cmplx_exp_real_imag.append([real, imag])
+                cmplx_exp_real_imag.append(cmplx_exp[i])
 
             i = i + 1
 

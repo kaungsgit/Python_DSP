@@ -9,11 +9,9 @@ Press any keyboard key to pause the animation
 """
 
 # @todo
-# remove complex arrays and use complex variable type
 # find out why the update is slow
 # reorganize the object oriented scheme
-# make sure the legends and line colors match between rect and polar plot
-# instead of spinning with respect to origin, add vector addition spinning
+# fix rect plot time axis
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,15 +37,18 @@ pi = np.pi
 #  False = Non-continuous  (able to zoom)
 continuous = True
 
+# if set True, all phasors in cmplx_exps will spin with respect to center of polar plot
+# if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
+spin_orig_center = False
+
 x = np.arange(fs)
 
 phi = 0
 
-# np.ones(fs),
-
 cmplx_exps = [
-    np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x]),
-    np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1) * (i / fs) + phi)) for i in x])
+    np.ones(fs),
+    # np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x]),
+    np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1.1) * (i / fs) + phi)) for i in x])
 ]
 
 
@@ -83,7 +84,7 @@ class ScopeRectCmbd(object):
         self.sig_lines_r_cmbd = [self.ax_r.plot([], [], fstr, linewidth=lw,
                                                 path_effects=[pe.Stroke(linewidth=5, foreground='w'), pe.Normal()])[0]
                                  for _, fstr, lw in
-                                 zip(range(2), ['-.', '--'], [3, 2])]
+                                 zip(range(2), ['r-.', 'b--'], [3, 2])]
         self.y_data_cmbd = [[0], [0]]
 
         # adding legend
@@ -160,22 +161,38 @@ class ScopePolarCmbd(object):
 
         # data lines for drawing the real and imag time waves of combined signals in cmplx_exps
         self.sig_lines_p_cmbd = [self.ax_p.plot([], [], fstr, linewidth=lw)[0] for _, fstr, lw in
-                                 zip(range(4), [':', '.', '-', '-'], [3, 1.5, 1.5, 1.5])]
+                                 zip(range(4), ['g-.', '.', 'r-', 'b-'], [3, 1.5, 1.5, 1.5])]
+
+        self.prev_end_pts = 0 + 0j
+
+        # adding legend
+        self.sig_lines_p_cmbd[0].set_label('Combined Phasor')
+        self.sig_lines_p_cmbd[2].set_label('Real Projection')
+        self.sig_lines_p_cmbd[3].set_label('Imag Projection')
+
+        self.ax_p.legend(bbox_to_anchor=(1.5, 1), loc="upper right")
 
     def update(self, emitted):
         # drawing the individual signals
+        self.prev_end_pts = 0 + 0j
+        emitted_list = []
         for emitted_sig, sig_line_p, mag_accu, theta_accu in zip(emitted, self.sig_lines_p, self.mag_accu,
                                                                  self.theta_accu):
             if not pause:
+                emitted_list.append(emitted_sig)
 
-                mag, theta = cm.polar(emitted_sig)
+                if spin_orig_center:
+                    mag, theta = cm.polar(emitted_sig)
+                else:
+                    mag, theta = cm.polar(sum(emitted_list))
+
                 # print(theta)
                 mag_accu.append(mag)
                 theta_accu.append(theta)
 
-                # adjust polar r limit
-                if mag_accu[-1] > self.ax_p.get_rmax():
-                    self.ax_p.set_rmax(mag_accu[-1] + 1)
+                # # adjust polar r limit
+                # if mag_accu[-1] > self.ax_p.get_rmax():
+                #     self.ax_p.set_rmax(mag_accu[-1] + 1)
 
                 # clear mag and theta lists if one rotation is complete
                 if theta_accu[-1] > 0 > theta_accu[-2]:
@@ -191,13 +208,12 @@ class ScopePolarCmbd(object):
                 mag_x, theta_x = cm.polar(complex(x, 0))
                 mag_y, theta_y = cm.polar(complex(0, y))
 
+                mag_pep, theta_pep = cm.polar(self.prev_end_pts)
                 # rotating phasor
-                sig_line_p[0].set_data([theta, theta], [0, mag])
+                sig_line_p[0].set_data([theta_pep, theta], [mag_pep, mag])
 
                 # phasor edge tracing
                 # sig_line_p[1].set_data(theta_accu, mag_accu)
-
-                sig_line_p[1].set_data([pi / 4, 0], [1, 0.5])
 
                 # these will draw the real and imag component of each signal in cmplx_exps on the polar plot
                 # usually commented out to avoid clutter
@@ -206,6 +222,9 @@ class ScopePolarCmbd(object):
                 # # projection to imag tracing
                 # sig_line_p[3].set_data([theta_y, theta_y], [0, mag_y])
 
+                if not spin_orig_center:
+                    self.prev_end_pts = cm.rect(mag, theta)
+
         # drawing of combined output
         if not pause:
 
@@ -213,7 +232,7 @@ class ScopePolarCmbd(object):
 
             # adjust polar r limit
             if mag > self.ax_p.get_rmax():
-                self.ax_p.set_rmax(mag + 0.25)
+                self.ax_p.set_rmax(mag + 1)
 
             cmplx = cm.rect(mag, theta)
             x = cmplx.real

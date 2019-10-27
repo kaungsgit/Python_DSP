@@ -167,10 +167,10 @@ class ScopePolarCmbd(object):
 
         # adding legend
         self.sig_lines_p_cmbd[0].set_label('Combined Phasor')
-        self.sig_lines_p_cmbd[2].set_label('Real Projection')
-        self.sig_lines_p_cmbd[3].set_label('Imag Projection')
+        self.sig_lines_p_cmbd[2].set_label('In-phase or Real Projection')
+        self.sig_lines_p_cmbd[3].set_label('Quadrature or Imag Projection')
 
-        self.ax_p.legend(bbox_to_anchor=(1.5, 1), loc="upper right")
+        self.ax_p.legend(bbox_to_anchor=(1.8, 1), loc="upper right")
 
     def update(self, emitted):
         # drawing the individual signals

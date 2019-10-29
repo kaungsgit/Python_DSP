@@ -19,6 +19,7 @@ import matplotlib.animation as animation
 import cmath as cm
 from collections.abc import Iterable
 import matplotlib.patheffects as pe
+from scipy.fftpack import fft, fftshift, fftfreq
 
 pause = False
 
@@ -28,6 +29,7 @@ f = 1000  # 1kHz      (Frequency)
 fs = 200000  # 200kHz    (Sample Rate)
 T = 1 / f
 Ts = 1 / fs
+N = fs  # number of samples
 
 x_t = np.arange(0, fs * Ts, Ts)
 pi = np.pi
@@ -41,14 +43,14 @@ continuous = True
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
 spin_orig_center = False
 
-x = np.arange(fs)
+x = np.arange(N)
 
 phi = 0
 
 cmplx_exps = [
-    np.ones(fs),
-    # np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x]),
-    np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1.1) * (i / fs) + phi)) for i in x])
+    np.ones(N),
+    # np.array([amp * np.exp(1j * (2 * pi * f * (i / N) + phi)) for i in x]),
+    np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1.1) * (i / N) + phi)) for i in x])
 ]
 
 
@@ -70,7 +72,7 @@ class ScopeRectCmbd(object):
         self.ax_r.grid(True)
         self.dt = dt
         self.max_t = max_t
-        self.t_data = [0]
+        self.t_data = np.zeros(1)
         self.y_data = []
         self.sig_lines_r = []
 
@@ -92,6 +94,10 @@ class ScopeRectCmbd(object):
         self.sig_lines_r_cmbd[1].set_label('Quadrature or Imag')
         self.ax_r.legend()
 
+        # self.ax_r.set_title('Time Domain Waveforms')
+        self.ax_r.set_ylabel('Amplitude [V]')
+        self.ax_r.set_xlabel('Time [s]')
+
         self.ax_r.set_ylim(-amp - 2, amp + 2)
         self.ax_r.set_xlim(0, self.max_t)
 
@@ -106,7 +112,9 @@ class ScopeRectCmbd(object):
                     self.ax_r.set_xlim(last_t - self.max_t, last_t)
 
             t = self.t_data[-1] + self.dt
-            self.t_data.append(t)
+
+            # self.t_data.append(t)
+            self.t_data = np.append(self.t_data, t)
 
             for emitted_sig, sig_line_r, y_data_1 in zip(emitted, self.sig_lines_r, self.y_data):
                 y_data_1[0].append(emitted_sig.real)
@@ -134,8 +142,8 @@ class ScopeRectCmbd(object):
             self.y_data_cmbd[1].append(imag_sum)
 
             # this will draw the final combined output of the signals in cmplx_exps
-            self.sig_lines_r_cmbd[0].set_data(self.t_data, self.y_data_cmbd[0])
-            self.sig_lines_r_cmbd[1].set_data(self.t_data, self.y_data_cmbd[1])
+            self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
+            self.sig_lines_r_cmbd[1].set_data(self.t_data / 1, self.y_data_cmbd[1])
 
         # print(list(flatten(self.sig_lines_r)))
         return list(flatten(self.sig_lines_r + self.sig_lines_r_cmbd))
@@ -169,8 +177,9 @@ class ScopePolarCmbd(object):
         self.sig_lines_p_cmbd[0].set_label('Combined Phasor')
         self.sig_lines_p_cmbd[2].set_label('In-phase or Real Projection')
         self.sig_lines_p_cmbd[3].set_label('Quadrature or Imag Projection')
+        self.ax_p.legend(bbox_to_anchor=(2.3, 1), loc="upper right")
 
-        self.ax_p.legend(bbox_to_anchor=(1.8, 1), loc="upper right")
+        # self.ax_p.set_title('Rotating Phasors in Polar Plot')
 
     def update(self, emitted):
         # drawing the individual signals
@@ -257,7 +266,7 @@ class ScopePolarCmbd(object):
 
 
 class Scope(ScopeRectCmbd, ScopePolarCmbd):
-    def __init__(self, num_sigs, max_t=2 * T, dt=Ts):
+    def __init__(self, num_sigs, max_t=4 * T, dt=Ts):
         ScopeRectCmbd.__init__(self, num_sigs, max_t, dt)
         ScopePolarCmbd.__init__(self, num_sigs)
 
@@ -292,9 +301,20 @@ def onClick(event):
 
 fig = plt.figure(1, figsize=(10, 10))
 
-ax_polar_cmbd = plt.subplot(2, 1, 1, projection='polar')
+ax_polar_cmbd = plt.subplot(3, 1, 1, projection='polar')
 
-ax_rect_cmbd = plt.subplot(2, 1, 2)
+ax_rect_cmbd = plt.subplot(3, 1, 2)
+
+# fft plot of the sum of signals in cmplx_exps
+sum_sig = sum(cmplx_exps)
+yf = fft(sum_sig)
+xf = fftfreq(N, 1 / fs)
+ax_rect_fft = plt.subplot(3, 1, 3)
+ax_rect_fft.set_xlabel('Frequency [kHz]')
+ax_rect_fft.set_ylabel('Magnitude')
+xf = fftshift(xf)
+yf = fftshift(yf)
+ax_rect_fft.plot(xf / 1e3, 1.0 / N * np.abs(yf))
 
 scope_main = Scope(len(cmplx_exps))
 

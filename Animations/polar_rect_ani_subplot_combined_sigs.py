@@ -53,6 +53,18 @@ cmplx_exps = [
     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1.1) * (i / N) + phi)) for i in x])
 ]
 
+# cmplx_exps = [
+#     # np.ones(N),
+#     # np.array([amp * np.exp(1j * (2 * pi * f * (i / N) + phi)) for i in x]),
+#     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1) * (i / N) + phi)) for i in x]),
+#     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 2) * (i / N) + phi)) for i in x]),
+#     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 3) * (i / N) + phi)) for i in x]),
+#     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 4) * (i / N) + phi)) for i in x]),
+#     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 5) * (i / N) + phi)) for i in x]),
+#     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 6) * (i / N) + phi)) for i in x]),
+#
+# ]
+
 
 # cmplx_exps = [np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x])
 
@@ -86,7 +98,7 @@ class ScopeRectCmbd(object):
         self.sig_lines_r_cmbd = [self.ax_r.plot([], [], fstr, linewidth=lw,
                                                 path_effects=[pe.Stroke(linewidth=5, foreground='w'), pe.Normal()])[0]
                                  for _, fstr, lw in
-                                 zip(range(2), ['r-.', 'b--'], [3, 2])]
+                                 zip(range(2), ['r-', 'b-'], [3, 2])]
         self.y_data_cmbd = [[0], [0]]
 
         # adding legend
@@ -163,13 +175,13 @@ class ScopePolarCmbd(object):
         for _ in range(num_sigs):
             self.sig_lines_p.append(
                 [self.ax_p.plot([], [], fstr, linewidth=lw)[0] for _, fstr, lw in
-                 zip(range(4), [':', '-', '-', '-'], [3, 1.5, 1.5, 1.5])])
+                 zip(range(4), ['-', '-', '-', '-'], [3, 1.5, 1.5, 1.5])])
             self.mag_accu.append([0])
             self.theta_accu.append([0])
 
         # data lines for drawing the real and imag time waves of combined signals in cmplx_exps
         self.sig_lines_p_cmbd = [self.ax_p.plot([], [], fstr, linewidth=lw)[0] for _, fstr, lw in
-                                 zip(range(4), ['g-.', '.', 'r-', 'b-'], [3, 1.5, 1.5, 1.5])]
+                                 zip(range(4), ['g-', '.', 'r-', 'b-'], [3, 1.5, 1.5, 1.5])]
 
         self.prev_end_pts = 0 + 0j
 

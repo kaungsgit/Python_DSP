@@ -47,12 +47,12 @@ x = np.arange(N)
 
 phi = 0
 
-vector = np.array([1, 1+2j, 1, 1])
+# vector = np.array([1, 1+2j, -1j])
 
-# vector = np.ones([10, 1])
+vector = np.ones([10, 1])
 
 
-vector = fft(vector)
+# vector = fft(vector)
 
 # cmplx_exps = [
 #     np.array([amp * np.exp(1j * (2 * pi * 0 * (i / N) + pi)) for i in x]),
@@ -65,7 +65,7 @@ cmplx_exps = []
 for index, phasor in enumerate(vector):
     start_mag, start_phase = cm.polar(phasor)
     cmplx_exps.append(
-        np.array([start_mag * np.exp(1j * (2 * pi * (-f * index / (1)) * (i / N) + start_phase)) for i in x]))
+        np.array([start_mag * np.exp(1j * (2 * pi * (-f * (index+1) / (1)) * (i / N) + start_phase)) for i in x]))
 
 
 # cmplx_exps = [
@@ -192,6 +192,9 @@ class ScopePolarCmbd(object):
         self.theta_accu = []
         self.sig_lines_p = []
 
+        self.mag_accu_cmbd = []
+        self.theta_accu_cmbd = []
+
         # self.lines = [plt.plot([], [])[0] for _ in range(2)]
 
         # data lines for drawing the real and imag time waves for each item in cmplx_exps
@@ -238,12 +241,12 @@ class ScopePolarCmbd(object):
                 # if mag_accu[-1] > self.ax_p.get_rmax():
                 #     self.ax_p.set_rmax(mag_accu[-1] + 1)
 
-                # clear mag and theta lists if one rotation is complete
-                if theta_accu[-1] > 0 > theta_accu[-2]:
-                    mag_accu.clear()
-                    theta_accu.clear()
-                    mag_accu.append(mag)
-                    theta_accu.append(theta)
+                # # clear mag and theta lists if one rotation is complete
+                # if theta_accu[-1] > 0 > theta_accu[-2]:
+                #     mag_accu.clear()
+                #     theta_accu.clear()
+                #     mag_accu.append(mag)
+                #     theta_accu.append(theta)
 
                 cmplx = cm.rect(mag, theta)
                 x = cmplx.real
@@ -274,6 +277,9 @@ class ScopePolarCmbd(object):
 
             mag, theta = cm.polar(sum(emitted))
 
+            self.mag_accu_cmbd.append(mag)
+            self.theta_accu_cmbd.append(theta)
+
             # adjust polar r limit
             if mag > self.ax_p.get_rmax():
                 self.ax_p.set_rmax(mag + 1)
@@ -290,7 +296,7 @@ class ScopePolarCmbd(object):
             self.sig_lines_p_cmbd[0].set_data([theta, theta], [0, mag])
 
             # phasor edge tracing
-            # self.sig_lines_p_cmbd[1].set_data(theta_accu, mag_accu)
+            self.sig_lines_p_cmbd[1].set_data(self.theta_accu_cmbd, self.mag_accu_cmbd)
 
             # projection to real tracing
             self.sig_lines_p_cmbd[2].set_data([theta_x, theta_x], [0, mag_x])

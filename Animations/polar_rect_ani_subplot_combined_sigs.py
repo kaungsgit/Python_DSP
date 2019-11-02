@@ -41,16 +41,16 @@ continuous = True
 
 # if set True, all phasors in cmplx_exps will spin with respect to center of polar plot
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
-spin_orig_center = False
+spin_orig_center = True
 
 x = np.arange(N)
 
 phi = 0
 
 cmplx_exps = [
-    np.ones(N),
-    # np.array([amp * np.exp(1j * (2 * pi * f * (i / N) + phi)) for i in x]),
-    np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1.1) * (i / N) + phi)) for i in x])
+    # np.array([amp * np.exp(1j * (2 * pi * 0 * (i / N) + phi)) for i in x]),
+    np.array([amp * np.exp(1j * (2 * pi * f * (i / N) + phi)) for i in x]),
+    np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1.0) * (i / N) + phi)) for i in x])
 ]
 
 # cmplx_exps = [

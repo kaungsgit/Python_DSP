@@ -37,7 +37,7 @@ pi = np.pi
 # Select if you want to display the sine as a continuous wave
 #  True = continuous (not able to zoom in x-direction)
 #  False = Non-continuous  (able to zoom)
-continuous = True
+continuous = False
 
 # if set True, all phasors in cmplx_exps will spin with respect to center of polar plot
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
@@ -47,10 +47,9 @@ x = np.arange(N)
 
 phi = 0
 
-# vector = np.array([1, 1+2j, -1j])
+vector = np.array([3, 2, 1])
 
-vector = np.ones([10, 1])
-
+# vector = np.ones([4, 1])
 
 # vector = fft(vector)
 
@@ -65,8 +64,7 @@ cmplx_exps = []
 for index, phasor in enumerate(vector):
     start_mag, start_phase = cm.polar(phasor)
     cmplx_exps.append(
-        np.array([start_mag * np.exp(1j * (2 * pi * (-f * (index+1) / (1)) * (i / N) + start_phase)) for i in x]))
-
+        np.array([start_mag * np.exp(1j * (2 * pi * (-f * (index) / (1)) * (i / N) + start_phase)) for i in x]))
 
 # cmplx_exps = [
 #     # np.ones(N),
@@ -79,6 +77,8 @@ for index, phasor in enumerate(vector):
 #     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 6) * (i / N) + phi)) for i in x]),
 #
 # ]
+
+num_sigs = len(cmplx_exps)
 
 
 # cmplx_exps = [np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x])
@@ -94,7 +94,7 @@ def flatten(lis):
 
 
 class ScopeRectCmbd(object):
-    def __init__(self, ax, num_sigs, max_t=2 * T, dt=Ts):
+    def __init__(self, ax, num_sigs, legend_list, xylabels, max_t=2 * T, dt=Ts):
         self.ax_r = ax
         self.ax_r.grid(True)
         self.dt = dt
@@ -102,6 +102,8 @@ class ScopeRectCmbd(object):
         self.t_data = np.zeros(1)
         self.y_data = []
         self.sig_lines_r = []
+        self.legend_list = legend_list
+        self.xylabels = xylabels
 
         # data lines for drawing the phasor, edge tracing, real and image projection for each item in cmplx_exps
         for _ in range(num_sigs):
@@ -116,14 +118,17 @@ class ScopeRectCmbd(object):
                                  zip(range(2), ['r-', 'b-'], [3, 2])]
         self.y_data_cmbd = [[0], [0]]
 
-        # adding legend
-        self.sig_lines_r_cmbd[0].set_label('In-phase or Real')
-        self.sig_lines_r_cmbd[1].set_label('Quadrature or Imag')
+        for line, legend in zip(self.sig_lines_r_cmbd, self.legend_list):
+            line.set_label(legend)
+
+        # # adding legend
+        # self.sig_lines_r_cmbd[0].set_label('In-phase or Real')
+        # self.sig_lines_r_cmbd[1].set_label('Quadrature or Imag')
         self.ax_r.legend()
 
         # self.ax_r.set_title('Time Domain Waveforms')
-        self.ax_r.set_ylabel('Amplitude [V]')
-        self.ax_r.set_xlabel('Time [s]')
+        self.ax_r.set_xlabel(self.xylabels[0])
+        self.ax_r.set_ylabel(self.xylabels[1])
 
         self.ax_r.set_ylim(-amp - 2, amp + 2)
         self.ax_r.set_xlim(0, self.max_t)
@@ -158,9 +163,12 @@ class ScopeRectCmbd(object):
             real_list = []
             imag_list = []
 
-            for emitted_sig in emitted:
-                real_list.append(emitted_sig.real)
-                imag_list.append(emitted_sig.imag)
+            # for emitted_sig in emitted:
+            #     real_list.append(emitted_sig.real)
+            #     imag_list.append(emitted_sig.imag)
+
+            real_list.append(sum(emitted).real)
+            imag_list.append(sum(emitted).imag)
 
             real_sum = sum(real_list)
             imag_sum = sum(imag_list)
@@ -168,17 +176,20 @@ class ScopeRectCmbd(object):
             self.y_data_cmbd[0].append(real_sum)
             self.y_data_cmbd[1].append(imag_sum)
 
-            # y_low, y_high = self.ax_r.get_ylim()
-            #
-            # max_pt = max(self.y_data_cmbd[0][-1], self.y_data_cmbd[1][-1])
-            # min_pt = min(self.y_data_cmbd[0][-1], self.y_data_cmbd[1][-1])
-            #
-            # if max_pt > y_high or min_pt < y_low:
-            #     self.ax_r.set_ylim(-(abs(min_pt) - 2), abs(max_pt) + 2)
+            y_low, y_high = self.ax_r.get_ylim()
+
+            max_pt = max(self.y_data_cmbd[0][-1], self.y_data_cmbd[1][-1])
+            min_pt = min(self.y_data_cmbd[0][-1], self.y_data_cmbd[1][-1])
+
+            if max_pt > y_high or min_pt < y_low:
+                self.ax_r.set_ylim(-(abs(min_pt) + 10), abs(max_pt) + 10)
 
             # this will draw the final combined output of the signals in cmplx_exps
-            self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
-            self.sig_lines_r_cmbd[1].set_data(self.t_data / 1, self.y_data_cmbd[1])
+            if len(self.legend_list) == 1:
+                self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
+            else:
+                self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
+                self.sig_lines_r_cmbd[1].set_data(self.t_data / 1, self.y_data_cmbd[1])
 
         # print(list(flatten(self.sig_lines_r)))
         return list(flatten(self.sig_lines_r + self.sig_lines_r_cmbd))
@@ -306,16 +317,22 @@ class ScopePolarCmbd(object):
         return list(flatten(self.sig_lines_p + self.sig_lines_p_cmbd))
 
 
-class Scope(ScopeRectCmbd, ScopePolarCmbd):
-    def __init__(self, num_sigs, max_t=4 * T, dt=Ts):
-        ScopeRectCmbd.__init__(self, ax_rect_cmbd, num_sigs, max_t, dt)
-        ScopePolarCmbd.__init__(self, ax_polar_cmbd, num_sigs)
+class Scope:
+    def __init__(self, num_sigs, max_t=0.5 * T, dt=Ts):
+        self.rect_time = ScopeRectCmbd(ax_rect_cmbd, num_sigs, ['Real', 'Imag'], ['Time [s]', 'Amp [V]'], max_t, dt)
+        self.pol1 = ScopePolarCmbd(ax_polar_cmbd, num_sigs)
+        self.rect_mag = ScopeRectCmbd(ax_rect_mag, num_sigs, ['Magnitude'], ['Freq', 'Amp'], max_t, dt)
+        self.rect_phase = ScopeRectCmbd(ax_rect_phase, num_sigs, ['Phase'], ['Freq', 'Amp'], max_t, dt)
 
     def update(self, emitted):
-        lines = ScopeRectCmbd.update(self, emitted)
-        polars = ScopePolarCmbd.update(self, emitted)
+        lines_time = self.rect_time.update(emitted)
+        polars = self.pol1.update(emitted)
 
-        return list(flatten(lines + polars))
+        mag, phase = cm.polar(sum(emitted))
+        lines_mag = self.rect_mag.update([20 * np.log10(mag)])
+        lines_phase = self.rect_phase.update([phase])
+
+        return list(flatten(lines_time + polars + lines_mag + lines_phase))
 
 
 def sine_emitter():
@@ -358,7 +375,8 @@ yf = fftshift(yf)
 ax_rect_fft.plot(xf / 1e3, 1.0 / N * np.abs(yf))
 
 # ax_mag = plt.subplot(3, 2, 4)
-
+ax_rect_mag = plt.subplot(3, 2, 4)
+ax_rect_phase = plt.subplot(3, 2, 5)
 
 scope_main = Scope(len(cmplx_exps))
 

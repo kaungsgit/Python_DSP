@@ -20,6 +20,7 @@ import cmath as cm
 from collections.abc import Iterable
 import matplotlib.patheffects as pe
 from scipy.fftpack import fft, fftshift, fftfreq
+import math
 
 pause = False
 
@@ -44,20 +45,20 @@ continuous = False
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
 spin_orig_center = False
 
-x = np.arange(N)
+# x = np.arange(N)
 
 phi = 0
 
-vector = np.array([1, 1])
+vector = np.array([1, 1, 1, 1])
 
 # vector = np.ones([4, 1])
 
 # vector = fft(vector)
 
 # cmplx_exps = [
-#     np.array([amp * np.exp(1j * (2 * pi * 0 * (i / N) + pi)) for i in x]),
-#     # np.array([amp * np.exp(1j * (2 * pi * f * (i / N) + phi)) for i in x]),
-#     np.array([amp * 1 * np.exp(1j * (2 * pi * (-f / 1.1) * (i / N) + phi)) for i in x])
+#     # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
+#     np.array(amp * 1 * np.exp(1j * (2 * pi * (f / 1.0) * x_t + phi)))
+#     # np.array(amp * 1 * np.exp(1j * (2 * pi * (-f / 1.0) * x_t + phi)))
 # ]
 
 cmplx_exps = []
@@ -65,7 +66,7 @@ cmplx_exps = []
 for index, phasor in enumerate(vector):
     start_mag, start_phase = cm.polar(phasor)
     cmplx_exps.append(
-        np.array([start_mag * np.exp(1j * (2 * pi * (-f * (index) / (1)) * (i / N) + start_phase)) for i in x]))
+        np.array(start_mag * np.exp(1j * (2 * pi * (-f * (index) / (1)) * x_t + start_phase))))
 
 # cmplx_exps = [
 #     # np.ones(N),
@@ -83,6 +84,12 @@ num_sigs = len(cmplx_exps)
 
 
 # cmplx_exps = [np.array([amp * np.exp(1j * (2 * pi * f * (i / fs) + phi)) for i in x])
+
+
+def round_down(n, decimals=0):
+    multiplier = 10 ** decimals
+    return math.floor(n * multiplier) / multiplier
+
 
 # flatten list items
 def flatten(lis):
@@ -117,7 +124,7 @@ class ScopeRectCmbd(object):
                                                 path_effects=[pe.Stroke(linewidth=5, foreground='w'), pe.Normal()])[0]
                                  for _, fstr, lw in
                                  zip(range(2), ['r-', 'b-'], [3, 2])]
-        self.y_data_cmbd = [[0], [0]]
+        self.y_data_cmbd = [[None], [None]]
 
         for line, legend in zip(self.sig_lines_r_cmbd, self.legend_list):
             line.set_label(legend)
@@ -127,7 +134,7 @@ class ScopeRectCmbd(object):
                                         0]
                                     for _, fstr, lw in
                                     zip(range(2), ['rx', 'bx'], [3, 2])]
-        self.y_data_curr_pt = [0, 0]
+        self.y_data_curr_pt = [None, None]
 
         # # adding legend
         # self.sig_lines_r_cmbd[0].set_label('In-phase or Real')
@@ -146,16 +153,19 @@ class ScopeRectCmbd(object):
         # drawing the individual signals
         if not pause:
             # print('rect values is ', y)
-            last_t = self.t_data[-1]
+            # round is necessary to insure round off errors don't impact the synced updates between rect plots
+            last_t = round(self.t_data[-1], 6)
             if continuous:
                 if last_t > self.t_data[0] + self.max_t:
                     self.ax_r.set_xlim(last_t - self.max_t, last_t)
-
-            # frozen frame but keeps drawing on the same frame
-            if last_t > self.max_t:
-                self.t_data = np.zeros(1)
-                self.y_data_cmbd = [[0], [0]]
-                self.y_data_curr_pt = [0, 0]
+            else:
+                # frozen frame but keeps drawing on the same frame
+                # round is necessary to insure round off errors don't impact the synced updates between rect plots
+                round_downed_max_t = round(self.max_t, 6)
+                if last_t >= round_downed_max_t:
+                    self.t_data = np.zeros(1)
+                    self.y_data_cmbd = [[None], [None]]
+                    self.y_data_curr_pt = [None, None]
 
             t = self.t_data[-1] + self.dt
 
@@ -171,8 +181,8 @@ class ScopeRectCmbd(object):
                 # sig_line_r[0].set_data(self.t_data, y_data_1[0])
                 # sig_line_r[1].set_data(self.t_data, y_data_1[1])
 
-        # combined output drawing
-        if not pause:
+            # combined output drawing
+            # if not pause:
 
             real_list = []
             imag_list = []
@@ -214,7 +224,7 @@ class ScopeRectCmbd(object):
                 self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
                 self.sig_lines_r_cmbd[1].set_data(self.t_data / 1, self.y_data_cmbd[1])
 
-        if not pause:
+            # if not pause:
             self.y_data_curr_pt[0] = sum(emitted).real
             self.y_data_curr_pt[1] = sum(emitted).imag
 
@@ -317,8 +327,8 @@ class ScopePolarCmbd(object):
                 if not spin_orig_center:
                     self.prev_end_pts = cm.rect(mag, theta)
 
-        # drawing of combined output
-        if not pause:
+            # drawing of combined output
+            # if not pause:
 
             mag, theta = cm.polar(sum(emitted))
 
@@ -353,7 +363,8 @@ class ScopePolarCmbd(object):
 
 class Scope:
     def __init__(self, num_sigs, max_t=1 * T, dt=Ts):
-        self.rect_time = ScopeRectCmbd(ax_rect_cmbd, num_sigs, ['Real', 'Imag'], ['Time [s]', 'Amp [V]'], max_t, dt)
+        self.rect_time = ScopeRectCmbd(ax_rect_cmbd, num_sigs, ['Real', 'Imag'], ['Time [s]', 'Amp [V]'], max_t * 1,
+                                       dt * 1)
         self.pol1 = ScopePolarCmbd(ax_polar_cmbd, num_sigs)
         self.rect_mag = ScopeRectCmbd(ax_rect_mag, num_sigs, ['Magnitude'], ['Freq', 'Amp'], max_t * omega,
                                       dt * omega)
@@ -375,6 +386,9 @@ class Scope:
             lines_mag = self.rect_mag.update([20 * np.log10(mag)])
             lines_phase = self.rect_phase.update([phase])
 
+        # lines_mag = self.rect_mag.update(emitted)
+        # lines_phase = self.rect_phase.update(emitted)
+
         return list(flatten(lines_time + polars + lines_mag + lines_phase))
 
 
@@ -383,7 +397,7 @@ def sine_emitter():
     real = 0
     imag = 0
     cmplx_exp_real_imag = []
-    while i < x.size:
+    while i < x_t.size:
         # print('i is ', i)
         if not pause:
             cmplx_exp_real_imag.clear()
@@ -424,7 +438,6 @@ ax_rect_phase = plt.subplot(3, 2, 5)
 scope_main = Scope(len(cmplx_exps))
 
 interval = 10
-
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "sineEmitter" to produce data for the update func

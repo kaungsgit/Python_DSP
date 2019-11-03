@@ -23,16 +23,17 @@ from scipy.fftpack import fft, fftshift, fftfreq
 
 pause = False
 
-# Your Parameters
+pi = np.pi
 amp = 1  # 1V        (Amplitude)
 f = 1000  # 1kHz      (Frequency)
 fs = 200000  # 200kHz    (Sample Rate)
 T = 1 / f
+omega = 2 * pi * f
+
 Ts = 1 / fs
 N = fs  # number of samples
 
 x_t = np.arange(0, fs * Ts, Ts)
-pi = np.pi
 
 # Select if you want to display the sine as a continuous wave
 #  True = continuous (not able to zoom in x-direction)
@@ -47,7 +48,7 @@ x = np.arange(N)
 
 phi = 0
 
-vector = np.array([3, 2, 1])
+vector = np.array([1, 1])
 
 # vector = np.ones([4, 1])
 
@@ -121,6 +122,13 @@ class ScopeRectCmbd(object):
         for line, legend in zip(self.sig_lines_r_cmbd, self.legend_list):
             line.set_label(legend)
 
+        self.sig_lines_r_curr_pt = [self.ax_r.plot([], [], fstr, linewidth=lw,
+                                                   path_effects=[pe.Stroke(linewidth=5, foreground='w'), pe.Normal()])[
+                                        0]
+                                    for _, fstr, lw in
+                                    zip(range(2), ['rx', 'bx'], [3, 2])]
+        self.y_data_curr_pt = [0, 0]
+
         # # adding legend
         # self.sig_lines_r_cmbd[0].set_label('In-phase or Real')
         # self.sig_lines_r_cmbd[1].set_label('Quadrature or Imag')
@@ -142,6 +150,12 @@ class ScopeRectCmbd(object):
             if continuous:
                 if last_t > self.t_data[0] + self.max_t:
                     self.ax_r.set_xlim(last_t - self.max_t, last_t)
+
+            # frozen frame but keeps drawing on the same frame
+            if last_t > self.max_t:
+                self.t_data = np.zeros(1)
+                self.y_data_cmbd = [[0], [0]]
+                self.y_data_curr_pt = [0, 0]
 
             t = self.t_data[-1] + self.dt
 
@@ -178,11 +192,20 @@ class ScopeRectCmbd(object):
 
             y_low, y_high = self.ax_r.get_ylim()
 
-            max_pt = max(self.y_data_cmbd[0][-1], self.y_data_cmbd[1][-1])
-            min_pt = min(self.y_data_cmbd[0][-1], self.y_data_cmbd[1][-1])
+            if len(self.legend_list) == 1:
+                max_pt = self.y_data_cmbd[0][-1]
+                min_pt = self.y_data_cmbd[0][-1]
+            else:
+                max_pt = max(self.y_data_cmbd[0][-1], self.y_data_cmbd[1][-1])
+                min_pt = min(self.y_data_cmbd[0][-1], self.y_data_cmbd[1][-1])
 
-            if max_pt > y_high or min_pt < y_low:
-                self.ax_r.set_ylim(-(abs(min_pt) + 10), abs(max_pt) + 10)
+            if max_pt >= y_high:
+                self.ax_r.set_ylim(y_low, max_pt + 10)
+            if min_pt <= y_low:
+                self.ax_r.set_ylim(min_pt - 10, y_high)
+
+            # if max_pt > y_high or min_pt < y_low:
+            #     self.ax_r.set_ylim(-(abs(min_pt) + 10), abs(max_pt) + 10)
 
             # this will draw the final combined output of the signals in cmplx_exps
             if len(self.legend_list) == 1:
@@ -191,8 +214,19 @@ class ScopeRectCmbd(object):
                 self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
                 self.sig_lines_r_cmbd[1].set_data(self.t_data / 1, self.y_data_cmbd[1])
 
+        if not pause:
+            self.y_data_curr_pt[0] = sum(emitted).real
+            self.y_data_curr_pt[1] = sum(emitted).imag
+
+            # this will draw the final combined output of the signals in cmplx_exps
+            if len(self.legend_list) == 1:
+                self.sig_lines_r_curr_pt[0].set_data(self.t_data[-1], self.y_data_curr_pt[0])
+            else:
+                self.sig_lines_r_curr_pt[0].set_data(self.t_data[-1], self.y_data_curr_pt[0])
+                self.sig_lines_r_curr_pt[1].set_data(self.t_data[-1], self.y_data_curr_pt[1])
+
         # print(list(flatten(self.sig_lines_r)))
-        return list(flatten(self.sig_lines_r + self.sig_lines_r_cmbd))
+        return list(flatten(self.sig_lines_r + self.sig_lines_r_cmbd + self.sig_lines_r_curr_pt))
 
 
 class ScopePolarCmbd(object):
@@ -318,19 +352,28 @@ class ScopePolarCmbd(object):
 
 
 class Scope:
-    def __init__(self, num_sigs, max_t=0.5 * T, dt=Ts):
+    def __init__(self, num_sigs, max_t=1 * T, dt=Ts):
         self.rect_time = ScopeRectCmbd(ax_rect_cmbd, num_sigs, ['Real', 'Imag'], ['Time [s]', 'Amp [V]'], max_t, dt)
         self.pol1 = ScopePolarCmbd(ax_polar_cmbd, num_sigs)
-        self.rect_mag = ScopeRectCmbd(ax_rect_mag, num_sigs, ['Magnitude'], ['Freq', 'Amp'], max_t, dt)
-        self.rect_phase = ScopeRectCmbd(ax_rect_phase, num_sigs, ['Phase'], ['Freq', 'Amp'], max_t, dt)
+        self.rect_mag = ScopeRectCmbd(ax_rect_mag, num_sigs, ['Magnitude'], ['Freq', 'Amp'], max_t * omega,
+                                      dt * omega)
+        self.rect_phase = ScopeRectCmbd(ax_rect_phase, num_sigs, ['Phase'], ['Freq', 'Amp'], max_t * omega,
+                                        dt * omega)
 
     def update(self, emitted):
         lines_time = self.rect_time.update(emitted)
         polars = self.pol1.update(emitted)
 
         mag, phase = cm.polar(sum(emitted))
-        lines_mag = self.rect_mag.update([20 * np.log10(mag)])
-        lines_phase = self.rect_phase.update([phase])
+
+        phase = np.rad2deg(phase)
+
+        if mag < 0.01:
+            lines_mag = self.rect_mag.update([20 * np.log10(0.01)])
+            lines_phase = self.rect_phase.update([phase])
+        else:
+            lines_mag = self.rect_mag.update([20 * np.log10(mag)])
+            lines_phase = self.rect_phase.update([phase])
 
         return list(flatten(lines_time + polars + lines_mag + lines_phase))
 

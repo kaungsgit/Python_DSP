@@ -19,7 +19,7 @@ import matplotlib.animation as animation
 import cmath as cm
 from collections.abc import Iterable
 import matplotlib.patheffects as pe
-from scipy.fftpack import fft, fftshift, fftfreq
+from scipy.fftpack import fft, fftshift, fftfreq, ifft
 import math
 
 pause = False
@@ -49,24 +49,54 @@ spin_orig_center = False
 
 phi = 0
 
-vector = np.array([1, 1, 2, 1, 1])
+vector = np.array([1, 1+2j, -1j])
 
 # vector = np.ones([4, 1])
 
 # vector = fft(vector)
 
+# manual cmplx exps
 # cmplx_exps = [
 #     # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
-#     np.array(amp * 1 * np.exp(1j * (2 * pi * (f / 1.0) * x_t + phi)))
-#     # np.array(amp * 1 * np.exp(1j * (2 * pi * (-f / 1.0) * x_t + phi)))
+#     np.array(amp * 1 * np.exp(1j * (2 * pi * (f / 1.0) * x_t + phi))),
+#     np.array(amp * 1 * np.exp(1j * (2 * pi * (-f / 1.0) * x_t + phi)))
 # ]
 
-cmplx_exps = []
+# cmplx_exps = []
+#
+# for index, phasor in enumerate(vector):
+#     start_mag, start_phase = cm.polar(phasor)
+#     cmplx_exps.append(
+#         np.array(start_mag * np.exp(1j * (2 * pi * (-f * (index) / (1)) * x_t + start_phase))))
 
-for index, phasor in enumerate(vector):
-    start_mag, start_phase = cm.polar(phasor)
-    cmplx_exps.append(
-        np.array(start_mag * np.exp(1j * (2 * pi * (-f * (index) / (1)) * x_t + start_phase))))
+# inverse FFT
+
+inverseFFT = ifft(vector)
+
+# rewriting inverse DFT equation
+# next is to plot the phasors required for each time domain sample, and also plot all time domain samples
+len_v = len(vector)
+reconstr = []
+one_samp_phasor_list = []
+reconstr_phasor = []
+
+for n, _ in enumerate(vector):
+    sum_term = 0
+    one_samp_phasor_list = []
+    for k, phasor in enumerate(vector):
+        one_sum = phasor * np.exp(1j * 2 * pi * k * n / len_v)
+
+        spin_pha = phasor * np.exp(1j * 2 * pi * f * k * n / len_v * x_t)
+        one_samp_phasor_list.append(spin_pha)
+
+        sum_term = sum_term + one_sum
+
+    reconstr_phasor.append(1 / len_v * sum(one_samp_phasor_list))
+
+    sum_term = 1 / len_v * sum_term
+    reconstr.append(sum_term)
+
+cmplx_exps = reconstr_phasor
 
 num_sigs = len(cmplx_exps)
 

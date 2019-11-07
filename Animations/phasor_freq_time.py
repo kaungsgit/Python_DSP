@@ -2,7 +2,7 @@
 @author: Kaung Myat San Oo
 Animation for understanding rotating phasors, negative frequency in DSP concepts
 
-Add, remove, or modify signals in phasor_list
+Add, remove, or modify signals in rotating_phasors
 Script will animate the individual phasors and the combined output in both rectangular and polar plots
 Press any keyboard key to pause the animation
 
@@ -42,13 +42,13 @@ n = x_t
 #  False = Non-continuous  (able to zoom)
 continuous = False
 
-# if set True, all phasors in phasor_list will spin with respect to center of polar plot
+# if set True, all phasors in rotating_phasors will spin with respect to center of polar plot
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
 spin_orig_center = False
 
 # manual phasor list
 # phi = 0
-# phasor_list = [
+# rotating_phasors = [
 #     # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
 #     np.array(amp * 1 * np.exp(1j * (2 * pi * (f / 1.0) * x_t + phi))),
 #     np.array(amp * 1 * np.exp(1j * (2 * pi * (-f / 1.0) * x_t + phi)))
@@ -118,13 +118,13 @@ class ScopeRectCmbd(object):
         self.legend_list = legend_list
         self.xylabels = xylabels
 
-        # data lines for drawing the phasor, edge tracing, real and image projection for each item in phasor_list
+        # data lines for drawing the phasor, edge tracing, real and image projection for each item in rotating_phasors
         for _ in range(num_sigs):
             self.sig_lines_r.append([self.ax_r.plot([], [], fstr)[0] for _, fstr in zip(range(2), ['', ''])])
             self.y_data.append([[0], [0]])
 
         # data lines for drawing the phasor, edge tracing, real and image projection for combined output signals in
-        # phasor_list
+        # rotating_phasors
         self.sig_lines_r_cmbd = [self.ax_r.plot([], [], fstr, linewidth=lw,
                                                 path_effects=[pe.Stroke(linewidth=5, foreground='w'), pe.Normal()])[0]
                                  for _, fstr, lw in
@@ -207,7 +207,7 @@ class ScopeRectCmbd(object):
                 y_data_1[0].append(emitted_sig.real)
                 y_data_1[1].append(emitted_sig.imag)
 
-                # these will show the individual line imag and real parts of each signal in phasor_list
+                # these will show the individual line imag and real parts of each signal in rotating_phasors
                 # these are usually commented out to avoid clutter
                 # sig_line_r[0].set_data(self.t_data, y_data_1[0])
                 # sig_line_r[1].set_data(self.t_data, y_data_1[1])
@@ -252,7 +252,7 @@ class ScopeRectCmbd(object):
             # if max_pt > y_high or min_pt < y_low:
             #     self.ax_r.set_ylim(-(abs(min_pt) + 10), abs(max_pt) + 10)
 
-            # this will draw the final combined output of the signals in phasor_list
+            # this will draw the final combined output of the signals in rotating_phasors
             if len(self.legend_list) == 1:
                 self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
             else:
@@ -263,7 +263,7 @@ class ScopeRectCmbd(object):
             self.y_data_curr_pt[0] = sum(emitted).real
             self.y_data_curr_pt[1] = sum(emitted).imag
 
-            # this will draw the final combined output of the signals in phasor_list
+            # this will draw the final combined output of the signals in rotating_phasors
             if len(self.legend_list) == 1:
                 self.sig_lines_r_curr_pt[0].set_data(self.t_data[-1], self.y_data_curr_pt[0])
             else:
@@ -287,7 +287,7 @@ class ScopePolarCmbd(object):
 
         # self.lines = [plt.plot([], [])[0] for _ in range(2)]
 
-        # data lines for drawing the real and imag time waves for each item in phasor_list
+        # data lines for drawing the real and imag time waves for each item in rotating_phasors
         for _ in range(num_sigs):
             self.sig_lines_p.append(
                 [self.ax_p.plot([], [], fstr, linewidth=lw)[0] for _, fstr, lw in
@@ -295,7 +295,7 @@ class ScopePolarCmbd(object):
             self.mag_accu.append([0])
             self.theta_accu.append([0])
 
-        # data lines for drawing the real and imag time waves of combined signals in phasor_list
+        # data lines for drawing the real and imag time waves of combined signals in rotating_phasors
         self.sig_lines_p_cmbd = [self.ax_p.plot([], [], fstr, linewidth=lw)[0] for _, fstr, lw in
                                  zip(range(4), ['g-', '-', 'r-', 'b-'], [3, 1.5, 1.5, 1.5])]
 
@@ -357,7 +357,7 @@ class ScopePolarCmbd(object):
                 # phasor edge tracing
                 # sig_line_p[1].set_data(theta_accu, mag_accu)
 
-                # these will draw the real and imag component of each signal in phasor_list on the polar plot
+                # these will draw the real and imag component of each signal in rotating_phasors on the polar plot
                 # usually commented out to avoid clutter
                 # # projection to real tracing
                 # sig_line_p[2].set_data([theta_x, theta_x], [0, mag_x])
@@ -469,7 +469,7 @@ ax_polar_cmbd = plt.subplot(3, 2, 1, projection='polar')
 
 ax_rect_cmbd = plt.subplot(3, 2, 2)
 
-# fft plot of the sum of signals in phasor_list
+# fft plot of the sum of signals in rotating_phasors
 sum_sig = sum(rotating_phasors)
 yf = fft(sum_sig)
 xf = fftfreq(num_sampls, 1 / fs)

@@ -46,43 +46,51 @@ continuous = False
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
 spin_orig_center = False
 
-# manual phasor list
-# phi = 0
-# rotating_phasors = [
-#     # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
-#     np.array(amp * 1 * np.exp(1j * (2 * pi * (f / 1.0) * x_t + phi))),
-#     np.array(amp * 1 * np.exp(1j * (2 * pi * (-f / 1.0) * x_t + phi)))
-# ]
+# list of phasor arrays that get passed into animation function
+rotating_phasors = []
+
+# pass in phasor arrays directly when True
+# this flag must be set to False if you're working with input_vector and FT_mode
+pass_direct_phasor_list = False
 
 FT_mode = True
 input_vector = [3, 2, 1]
 N = len(input_vector)
-rotating_phasors = []
 
-if FT_mode:
-    # in this mode, input vector is time  domain samples (real or complex) and the polar plot will show reconstructed
-    # time domain samples
-    xn = np.array(input_vector)
-    Xk = fft(xn)
-
-    # inverse FFT to check, should be the same as input_vector
-    inverseFFT = ifft(xn)
-    # rewriting inverse DFT equation
-    # xn = 1/N summation k=0 to N-1 {Xk * e^(j * 2pi * k * n / N)
-    for k, X_curr_k in enumerate(Xk):
-        rotating_phasors.append(1 / N * X_curr_k *
-                                np.array(np.exp(1j * (2 * pi * f * k * n / N))))
+if pass_direct_phasor_list:
+    # manual phasor list
+    phi = 0
+    rotating_phasors = [
+        # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
+        np.array(amp * 1 * np.exp(1j * (2 * pi * (f / 1.0) * x_t + phi))),
+        np.array(amp * 1 * np.exp(1j * (2 * pi * (-f / 1.0) * x_t + phi)))
+    ]
 
 else:
-    # in this mode, input vector is FIR filter coefficients h[k] or bk
-    # polar plot will show how frequency response of FIR filter is made
-    filt_coeffs = np.array(input_vector)
+    if FT_mode:
+        # in this mode, input vector is time  domain samples (real or complex) and the polar plot will show reconstructed
+        # time domain samples
+        xn = np.array(input_vector)
+        Xk = fft(xn)
 
-    # rewriting frequency response of FIR filter
-    # H(e^jw) = summation k=0 to M-1 {bk e^(-j * w * k)}
-    for k, b_curr_k in enumerate(filt_coeffs):
-        rotating_phasors.append(b_curr_k *
-                                np.array(np.exp(-1j * (w * k * n))))
+        # inverse FFT to check, should be the same as input_vector
+        inverseFFT = ifft(xn)
+        # rewriting inverse DFT equation
+        # xn = 1/N summation k=0 to N-1 {Xk * e^(j * 2pi * k * n / N)
+        for k, X_curr_k in enumerate(Xk):
+            rotating_phasors.append(1 / N * X_curr_k *
+                                    np.array(np.exp(1j * (2 * pi * f * k * n / N))))
+
+    else:
+        # in this mode, input vector is FIR filter coefficients h[k] or bk
+        # polar plot will show how frequency response of FIR filter is made
+        filt_coeffs = np.array(input_vector)
+
+        # rewriting frequency response of FIR filter
+        # H(e^jw) = summation k=0 to M-1 {bk e^(-j * w * k)}
+        for k, b_curr_k in enumerate(filt_coeffs):
+            rotating_phasors.append(b_curr_k *
+                                    np.array(np.exp(-1j * (w * k * n))))
 
 num_sigs = len(rotating_phasors)
 

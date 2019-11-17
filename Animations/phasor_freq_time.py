@@ -54,12 +54,33 @@ rotating_phasors = []
 pass_direct_phasor_list = False
 
 FT_mode = True
-input_vector = [3, 2, 1]
+double_sided_FFT = False
+input_vector = [1, 4, -2 - 2j]
+# [1, 4, -2, -9]
 N = len(input_vector)
+
+
+def fftfreq1(N, d):
+    # this function is different from fftfreq from scipy
+    # in that it returns the first N/2+1 plus the second half (N/2-1 in scipy edition) as fftfreq for even N
+    # for odd N, it returns the first (N+1)/2 plus the second half ((N-1/)2 in scipy edition)
+    # (this is how Richard Lyon's DSP book states)
+
+    if N % 2 == 0:
+        # even
+        a1 = np.arange(0, N / 2 + 1, 1)
+        a2 = np.arange(-N / 2 + 1, 0, 1)
+        return np.concatenate((a1, a2)) / (N * d)
+    else:
+        # odd
+        a1 = np.arange(0, (N + 1) / 2, 1)
+        a2 = np.arange(-(N - 1) / 2, 0, 1)
+        return np.concatenate((a1, a2)) / (N * d)
+
 
 if pass_direct_phasor_list:
     # manual phasor list
-    phi = 0
+    phi = pi / 2
     rotating_phasors = [
         # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
         np.array(amp * 1 * np.exp(1j * (2 * pi * (f / 1.0) * x_t + phi))),
@@ -73,13 +94,30 @@ else:
         xn = np.array(input_vector)
         Xk = fft(xn)
 
+        if double_sided_FFT:
+            k_cpy = fftfreq1(N, 1 / N)
+        else:
+            k_cpy = np.arange(0, N, 1)
+        # Xk = fftshift(Xk)
+        # k_cpy = fftshift(k_cpy)
+
         # inverse FFT to check, should be the same as input_vector
-        inverseFFT = ifft(xn)
+        inverseFFT = ifft(Xk)
         # rewriting inverse DFT equation
         # xn = 1/N summation k=0 to N-1 {Xk * e^(j * 2pi * k * n / N)
-        for k, X_curr_k in enumerate(Xk):
+        for k, X_curr_k in zip(k_cpy, Xk):
+            # if k == 2:
+            #     f = -f
+            # else:
+            #     f = abs(f)
+            #
+            # k_cpy = k
+            #
+            # if k == 1 or k == 2:
+            #     k_cpy = 1
+
             rotating_phasors.append(1 / N * X_curr_k *
-                                    np.array(np.exp(1j * (2 * pi * f * k * n / N))))
+                                    np.array(np.exp(1j * (2 * pi * f * k * n / 1))))
 
     else:
         # in this mode, input vector is FIR filter coefficients h[k] or bk
@@ -93,6 +131,8 @@ else:
                                     np.array(np.exp(-1j * (w * k * n))))
 
 num_sigs = len(rotating_phasors)
+
+test = fftfreq1(3, 1 / 3)
 
 
 def wrap_around(x, count):
@@ -285,7 +325,7 @@ class ScopeRectCmbd(object):
 class ScopePolarCmbd(object):
     def __init__(self, ax, num_sigs):
         self.ax_p = ax
-        self.ax_p.set_rmax(1)
+        self.ax_p.set_rmax(2)
         self.mag_accu = []
         self.theta_accu = []
         self.sig_lines_p = []
@@ -401,10 +441,10 @@ class ScopePolarCmbd(object):
             # phasor edge tracing
             self.sig_lines_p_cmbd[1].set_data(self.theta_accu_cmbd, self.mag_accu_cmbd)
 
-            # projection to real tracing
-            self.sig_lines_p_cmbd[2].set_data([theta_x, theta_x], [0, mag_x])
-            # projection to imag tracing
-            self.sig_lines_p_cmbd[3].set_data([theta_y, theta_y], [0, mag_y])
+            # # projection to real tracing
+            # self.sig_lines_p_cmbd[2].set_data([theta_x, theta_x], [0, mag_x])
+            # # projection to imag tracing
+            # self.sig_lines_p_cmbd[3].set_data([theta_y, theta_y], [0, mag_y])
 
         return list(flatten(self.sig_lines_p + self.sig_lines_p_cmbd))
 
@@ -474,6 +514,8 @@ def onClick(event):
 fig = plt.figure(1, figsize=(10, 10))
 
 ax_polar_cmbd = plt.subplot(3, 2, 1, projection='polar')
+# ax_polar_cmbd.set_rmax(20)
+
 
 ax_rect_cmbd = plt.subplot(3, 2, 2)
 
@@ -494,7 +536,7 @@ ax_rect_phase = plt.subplot(3, 2, 5)
 
 scope_main = Scope(len(rotating_phasors))
 
-interval = 10
+interval = 40
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "sineEmitter" to produce data for the update func

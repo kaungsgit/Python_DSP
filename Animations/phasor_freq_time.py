@@ -22,42 +22,7 @@ import matplotlib.patheffects as pe
 from scipy.fftpack import fft, fftshift, fftfreq, ifft
 import math
 
-pause = False
-
 pi = np.pi
-amp = 1  # 1V        (Amplitude)
-f = 1000  # 1kHz      (Frequency)
-fs = 200000  # 200kHz    (Sample Rate)
-T = 1 / f
-w = 2 * pi * f
-
-Ts = 1 / fs
-num_sampls = fs  # number of samples
-
-x_t = np.arange(0, fs * Ts, Ts)
-n = x_t
-
-# Select if you want to display the sine as a continuous wave
-#  True = continuous (not able to zoom in x-direction)
-#  False = Non-continuous  (able to zoom)
-continuous = False
-
-# if set True, all phasors in rotating_phasors will spin with respect to center of polar plot
-# if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
-spin_orig_center = False
-
-# list of phasor arrays that get passed into animation function
-rotating_phasors = []
-
-# pass in phasor arrays directly when True
-# this flag must be set to False if you're working with input_vector and FT_mode
-pass_direct_phasor_list = False
-
-FT_mode = True
-double_sided_FFT = False
-input_vector = [1, 4, -2 - 2j]
-# [1, 4, -2, -9]
-N = len(input_vector)
 
 
 def fftfreq1(N, d):
@@ -78,46 +43,89 @@ def fftfreq1(N, d):
         return np.concatenate((a1, a2)) / (N * d)
 
 
+def wrap_around(x, count):
+    return x % count
+
+
+def flatten(lis):
+    # flatten list items
+    for item in lis:
+        if isinstance(item, Iterable) and not isinstance(item, str):
+            for x in flatten(item):
+                yield x
+        else:
+            yield item
+
+
+amp = 1  # 1V        (Amplitude)
+f0 = 1000  # 1kHz      (Frequency)
+Fs = 200000  # 200kHz    (Sample Rate)
+T = 1 / f0
+w0 = 2 * pi * f0
+
+Ts = 1 / Fs
+num_sampls = Fs  # number of samples
+
+x_t = np.arange(0, Fs * Ts, Ts)
+n = x_t
+
+# list of phasor arrays that get passed into animation function
+rotating_phasors = []
+
+pause = False
+
+# Select if you want to display the sine as a continuous wave
+#  True = continuous (not able to zoom in x-direction)
+#  False = Non-continuous  (able to zoom)
+continuous = False
+
+# if set True, all phasors in rotating_phasors will spin with respect to center of polar plot
+# if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
+spin_orig_center = False
+
+# pass in phasor arrays directly when True
+# this flag must be set to False if you're working with input_vector and FT_mode
+pass_direct_phasor_list = False
+
+FT_mode = False
+double_sided_FFT = True
+input_vector = np.array([3, 8, 14, 8, 3])
+N = len(input_vector)
+
+max_mag = np.absolute(input_vector).max()
+max_theta = np.angle(input_vector, deg=True).min()
+
 if pass_direct_phasor_list:
     # manual phasor list
     phi = pi / 2
     rotating_phasors = [
         # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
-        np.array(amp * 1 * np.exp(1j * (2 * pi * (f / 1.0) * x_t + phi))),
-        np.array(amp * 1 * np.exp(1j * (2 * pi * (-f / 1.0) * x_t + phi)))
+        np.array(amp * 1 * np.exp(1j * (2 * pi * (f0 / 1.0) * x_t + phi))),
+        np.array(amp * 1 * np.exp(1j * (2 * pi * (-f0 / 1.0) * x_t + phi)))
     ]
 
 else:
     if FT_mode:
-        # in this mode, input vector is time  domain samples (real or complex) and the polar plot will show reconstructed
-        # time domain samples
+        # in this mode, input vector is time  domain samples (real or complex) and
+        # the polar plot will show reconstructed time domain samples
         xn = np.array(input_vector)
         Xk = fft(xn)
 
         if double_sided_FFT:
-            k_cpy = fftfreq1(N, 1 / N)
+            freq_idx = fftfreq1(N, 1 / N)
         else:
-            k_cpy = np.arange(0, N, 1)
+            freq_idx = np.arange(0, N, 1)
         # Xk = fftshift(Xk)
-        # k_cpy = fftshift(k_cpy)
+        # freq_idx = fftshift(freq_idx)
 
         # inverse FFT to check, should be the same as input_vector
         inverseFFT = ifft(Xk)
         # rewriting inverse DFT equation
         # xn = 1/N summation k=0 to N-1 {Xk * e^(j * 2pi * k * n / N)
-        for k, X_curr_k in zip(k_cpy, Xk):
-            # if k == 2:
-            #     f = -f
-            # else:
-            #     f = abs(f)
-            #
-            # k_cpy = k
-            #
-            # if k == 1 or k == 2:
-            #     k_cpy = 1
-
+        for k, X_curr_k in zip(freq_idx, Xk):
             rotating_phasors.append(1 / N * X_curr_k *
-                                    np.array(np.exp(1j * (2 * pi * f * k * n / 1))))
+                                    np.array(np.exp(
+                                        1j * (2 * pi * f0 * k * n / 1))))  # 1/N term is not included, it's just speed
 
     else:
         # in this mode, input vector is FIR filter coefficients h[k] or bk
@@ -125,33 +133,12 @@ else:
         filt_coeffs = np.array(input_vector)
 
         # rewriting frequency response of FIR filter
-        # H(e^jw) = summation k=0 to M-1 {bk e^(-j * w * k)}
+        # H(e^jw) = summation k=0 to M-1 {bk e^(-j * w0 * k)}
         for k, b_curr_k in enumerate(filt_coeffs):
             rotating_phasors.append(b_curr_k *
-                                    np.array(np.exp(-1j * (w * k * n))))
+                                    np.array(np.exp(-1j * (w0 * k * n))))
 
 num_sigs = len(rotating_phasors)
-
-test = fftfreq1(3, 1 / 3)
-
-
-def wrap_around(x, count):
-    return x % count
-
-
-def round_down(n, decimals=0):
-    multiplier = 10 ** decimals
-    return math.floor(n * multiplier) / multiplier
-
-
-# flatten list items
-def flatten(lis):
-    for item in lis:
-        if isinstance(item, Iterable) and not isinstance(item, str):
-            for x in flatten(item):
-                yield x
-        else:
-            yield item
 
 
 class ScopeRectCmbd(object):
@@ -165,23 +152,24 @@ class ScopeRectCmbd(object):
         self.sig_lines_r = []
         self.legend_list = legend_list
         self.xylabels = xylabels
+        self.num_sigs = num_sigs
 
-        # data lines for drawing the phasor, edge tracing, real and image projection for each item in rotating_phasors
+        # data lines for drawing the real and imag time waves for each item in rotating_phasors
+        # for each signal in rotating_phasors, sig_lines_r will draw the real and imag projections in rect plot
         for _ in range(num_sigs):
             self.sig_lines_r.append([self.ax_r.plot([], [], fstr)[0] for _, fstr in zip(range(2), ['', ''])])
             self.y_data.append([[0], [0]])
 
-        # data lines for drawing the phasor, edge tracing, real and image projection for combined output signals in
-        # rotating_phasors
+        # data lines for drawing the real and imag time waves for each item in rotating_phasors
+        # sig_lines_r_cmbd will draw the real and imag of all signals combined in rotating_phasors
         self.sig_lines_r_cmbd = [self.ax_r.plot([], [], fstr, linewidth=lw,
                                                 path_effects=[pe.Stroke(linewidth=5, foreground='w'), pe.Normal()])[0]
                                  for _, fstr, lw in
                                  zip(range(2), ['r-', 'b-'], [3, 2])]
+
         self.y_data_cmbd = [[], []]
 
-        for line, legend in zip(self.sig_lines_r_cmbd, self.legend_list):
-            line.set_label(legend)
-
+        # sig_lines_r_curr_pt will draw the current location of the projection with an x
         self.sig_lines_r_curr_pt = [self.ax_r.plot([], [], fstr, linewidth=lw,
                                                    path_effects=[pe.Stroke(linewidth=5, foreground='w'), pe.Normal()])[
                                         0]
@@ -190,22 +178,17 @@ class ScopeRectCmbd(object):
         self.y_data_curr_pt = [0, 0]
 
         # # adding legend
-        # self.sig_lines_r_cmbd[0].set_label('In-phase or Real')
-        # self.sig_lines_r_cmbd[1].set_label('Quadrature or Imag')
+        for line, legend in zip(self.sig_lines_r_cmbd, self.legend_list):
+            line.set_label(legend)
         self.ax_r.legend()
 
-        # self.ax_r.set_title('Time Domain Waveforms')
         self.ax_r.set_xlabel(self.xylabels[0])
         self.ax_r.set_ylabel(self.xylabels[1])
 
         self.ax_r.set_ylim(-amp - 2, amp + 2)
         self.ax_r.set_xlim(0, self.max_t)
 
-        self.counter = 0
-
     def update(self, emitted):
-
-        # self.counter = self.counter + 1
 
         # drawing the individual signals
         if not pause:
@@ -216,40 +199,45 @@ class ScopeRectCmbd(object):
             # to the nearest
             x_index_wrapped = wrap_around(x_index, round(self.max_t / self.dt))
 
+            # strip off index since it's been saved
             emitted = emitted[:-1]
 
-            # print('rect values is ', y)
             # round is necessary to insure round off errors don't impact the synced updates between rect plots
-
             if self.t_data.size == 0:
                 last_t = 0
             else:
                 last_t = round(self.t_data[-1], 6)
 
             if continuous:
-                if last_t > self.t_data[0] + self.max_t:
-                    self.ax_r.set_xlim(last_t - self.max_t, last_t)
+                if self.t_data.size == 0:
+                    if last_t > self.max_t:
+                        self.ax_r.set_xlim(last_t - self.max_t, last_t)
+                else:
+                    if last_t > self.t_data[0] + self.max_t:
+                        self.ax_r.set_xlim(last_t - self.max_t, last_t)
             else:
                 # frozen frame but keeps drawing on the same frame
                 # round is necessary to insure round off errors don't impact the synced updates between rect plots
-                round_downed_max_t = round(self.max_t - self.dt, 6)
-                if last_t >= round_downed_max_t:
+                round_nearest_max_t = round(self.max_t - self.dt, 6)
+                if last_t >= round_nearest_max_t:
                     self.t_data = np.empty(0)
                     self.y_data_cmbd = [[], []]
                     self.y_data_curr_pt = [0, 0]
 
-            # t = self.t_data[-1] + self.dt
-            #
-            # # self.t_data.append(t)
-            # self.t_data = np.append(self.t_data, t)
+            if x_index_wrapped == 0:
+                # reset t_data once one cycle (2pi rotation) is completed
+                self.t_data = np.empty(0)
+
+                # reinitialize y_data_cmbd to start clean slate if x_index is zero
+                self.y_data_cmbd[0] = []
+                self.y_data_cmbd[1] = []
+
+                # reinitialize y_data_cmbd to start clean slate if x_index is zero
+                self.y_data = []
+                for _ in range(self.num_sigs):
+                    self.y_data.append([[], []])
 
             self.t_data = (np.append(self.t_data, x_index_wrapped * self.dt))
-            # self.t_data = self.t_data * self.dt
-
-            if x_index_wrapped == 0:
-                self.t_data = np.empty(0)
-                self.t_data = np.append(self.t_data, x_index_wrapped * self.dt)
-                # self.t_data = self.t_data * self.dt
 
             for emitted_sig, sig_line_r, y_data_1 in zip(emitted, self.sig_lines_r, self.y_data):
                 y_data_1[0].append(emitted_sig.real)
@@ -261,27 +249,14 @@ class ScopeRectCmbd(object):
                 # sig_line_r[1].set_data(self.t_data, y_data_1[1])
 
             # combined output drawing
-            # if not pause:
+            curr_pt_real = sum(emitted).real
+            curr_pt_imag = sum(emitted).imag
 
-            real_list = []
-            imag_list = []
+            self.y_data_cmbd[0].append(curr_pt_real)
+            self.y_data_cmbd[1].append(curr_pt_imag)
 
-            # for emitted_sig in emitted:
-            #     real_list.append(emitted_sig.real)
-            #     imag_list.append(emitted_sig.imag)
-
-            real_list.append(sum(emitted).real)
-            imag_list.append(sum(emitted).imag)
-
-            real_sum = sum(real_list)
-            imag_sum = sum(imag_list)
-
-            if x_index_wrapped == 0:
-                self.y_data_cmbd[0] = []
-                self.y_data_cmbd[1] = []
-
-            self.y_data_cmbd[0].append(real_sum)
-            self.y_data_cmbd[1].append(imag_sum)
+            self.y_data_curr_pt[0] = curr_pt_real
+            self.y_data_curr_pt[1] = curr_pt_imag
 
             y_low, y_high = self.ax_r.get_ylim()
 
@@ -297,21 +272,16 @@ class ScopeRectCmbd(object):
             if min_pt <= y_low:
                 self.ax_r.set_ylim(min_pt - 10, y_high)
 
-            # if max_pt > y_high or min_pt < y_low:
-            #     self.ax_r.set_ylim(-(abs(min_pt) + 10), abs(max_pt) + 10)
-
             # this will draw the final combined output of the signals in rotating_phasors
             if len(self.legend_list) == 1:
+                # only 1 line will be drawn, it'll be either mag or phase
                 self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
             else:
+                # two lines will be drawn, it's real projection and imag projection
                 self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
                 self.sig_lines_r_cmbd[1].set_data(self.t_data / 1, self.y_data_cmbd[1])
 
-            # if not pause:
-            self.y_data_curr_pt[0] = sum(emitted).real
-            self.y_data_curr_pt[1] = sum(emitted).imag
-
-            # this will draw the final combined output of the signals in rotating_phasors
+            # this will draw the current point of final combined output of the signals in rotating_phasors
             if len(self.legend_list) == 1:
                 self.sig_lines_r_curr_pt[0].set_data(self.t_data[-1], self.y_data_curr_pt[0])
             else:
@@ -325,7 +295,7 @@ class ScopeRectCmbd(object):
 class ScopePolarCmbd(object):
     def __init__(self, ax, num_sigs):
         self.ax_p = ax
-        self.ax_p.set_rmax(2)
+
         self.mag_accu = []
         self.theta_accu = []
         self.sig_lines_p = []
@@ -333,9 +303,7 @@ class ScopePolarCmbd(object):
         self.mag_accu_cmbd = []
         self.theta_accu_cmbd = []
 
-        # self.lines = [plt.plot([], [])[0] for _ in range(2)]
-
-        # data lines for drawing the real and imag time waves for each item in rotating_phasors
+        # data lines for drawing the phasor, edge tracing, real and image projection for each item in rotating_phasors
         for _ in range(num_sigs):
             self.sig_lines_p.append(
                 [self.ax_p.plot([], [], fstr, linewidth=lw)[0] for _, fstr, lw in
@@ -343,7 +311,8 @@ class ScopePolarCmbd(object):
             self.mag_accu.append([0])
             self.theta_accu.append([0])
 
-        # data lines for drawing the real and imag time waves of combined signals in rotating_phasors
+        # data lines for drawing the combined phasor, edge tracing, real and image projection
+        # or each item in rotating_phasors
         self.sig_lines_p_cmbd = [self.ax_p.plot([], [], fstr, linewidth=lw)[0] for _, fstr, lw in
                                  zip(range(4), ['g-', '-', 'r-', 'b-'], [3, 1.5, 1.5, 1.5])]
 
@@ -357,6 +326,9 @@ class ScopePolarCmbd(object):
 
         # self.ax_p.set_title('Rotating Phasors in Polar Plot')
 
+        self.ax_p.set_rmax(max_mag + 2)
+        self.one_cycle_index = Fs / f0
+
     def update(self, emitted):
 
         # drawing the individual signals
@@ -364,6 +336,9 @@ class ScopePolarCmbd(object):
         emitted_list = []
 
         if not pause:
+            x_index = emitted[-1]
+            x_index_wrapped = wrap_around(x_index, self.one_cycle_index)
+
             # strip off index, don't need it here
             emitted = emitted[:-1]
             for emitted_sig, sig_line_p, mag_accu, theta_accu in zip(emitted, self.sig_lines_p, self.mag_accu,
@@ -377,19 +352,12 @@ class ScopePolarCmbd(object):
                     mag, theta = cm.polar(sum(emitted_list))
 
                 # print(theta)
+                if x_index_wrapped == 0:
+                    mag_accu = []
+                    theta_accu = []
+
                 mag_accu.append(mag)
                 theta_accu.append(theta)
-
-                # # adjust polar r limit
-                # if mag_accu[-1] > self.ax_p.get_rmax():
-                #     self.ax_p.set_rmax(mag_accu[-1] + 1)
-
-                # # clear mag and theta lists if one rotation is complete
-                # if theta_accu[-1] > 0 > theta_accu[-2]:
-                #     mag_accu.clear()
-                #     theta_accu.clear()
-                #     mag_accu.append(mag)
-                #     theta_accu.append(theta)
 
                 cmplx = cm.rect(mag, theta)
                 x = cmplx.real
@@ -403,6 +371,7 @@ class ScopePolarCmbd(object):
                 sig_line_p[0].set_data([theta_pep, theta], [mag_pep, mag])
 
                 # phasor edge tracing
+                # usually commented out to avoid clutter
                 # sig_line_p[1].set_data(theta_accu, mag_accu)
 
                 # these will draw the real and imag component of each signal in rotating_phasors on the polar plot
@@ -416,15 +385,17 @@ class ScopePolarCmbd(object):
                     self.prev_end_pts = cm.rect(mag, theta)
 
             # drawing of combined output
-            # if not pause:
-
             mag, theta = cm.polar(sum(emitted))
+
+            if x_index_wrapped == 0:
+                self.mag_accu_cmbd = []
+                self.theta_accu_cmbd = []
 
             self.mag_accu_cmbd.append(mag)
             self.theta_accu_cmbd.append(theta)
 
             # adjust polar r limit
-            if mag > self.ax_p.get_rmax():
+            if mag >= self.ax_p.get_rmax():
                 self.ax_p.set_rmax(mag + 1)
 
             cmplx = cm.rect(mag, theta)
@@ -442,10 +413,11 @@ class ScopePolarCmbd(object):
             self.sig_lines_p_cmbd[1].set_data(self.theta_accu_cmbd, self.mag_accu_cmbd)
 
             # # projection to real tracing
-            # self.sig_lines_p_cmbd[2].set_data([theta_x, theta_x], [0, mag_x])
+            self.sig_lines_p_cmbd[2].set_data([theta_x, theta_x], [0, mag_x])
             # # projection to imag tracing
-            # self.sig_lines_p_cmbd[3].set_data([theta_y, theta_y], [0, mag_y])
+            self.sig_lines_p_cmbd[3].set_data([theta_y, theta_y], [0, mag_y])
 
+            # plt.draw()
         return list(flatten(self.sig_lines_p + self.sig_lines_p_cmbd))
 
 
@@ -454,10 +426,10 @@ class Scope:
         self.rect_time = ScopeRectCmbd(ax_rect_cmbd, num_sigs, ['Real', 'Imag'], ['Time [s]', 'Amp [V]'], max_t * 1,
                                        dt * 1)
         self.pol1 = ScopePolarCmbd(ax_polar_cmbd, num_sigs)
-        self.rect_mag = ScopeRectCmbd(ax_rect_mag, num_sigs, ['Magnitude'], ['Freq', 'Amp [dB]'], max_t * w,
-                                      dt * w)
-        self.rect_phase = ScopeRectCmbd(ax_rect_phase, num_sigs, ['Phase'], ['Freq', 'Amp [Deg]'], max_t * w,
-                                        dt * w)
+        self.rect_mag = ScopeRectCmbd(ax_rect_mag, num_sigs, ['Magnitude'], ['Freq', 'Amp [dB]'], max_t * w0,
+                                      dt * w0)
+        self.rect_phase = ScopeRectCmbd(ax_rect_phase, num_sigs, ['Phase'], ['Freq', 'Amp [Deg]'], max_t * w0,
+                                        dt * w0)
 
     def update(self, emitted):
 
@@ -473,8 +445,8 @@ class Scope:
 
         phase = np.rad2deg(phase)
 
-        if mag < 0.01:
-            lines_mag = self.rect_mag.update([20 * np.log10(0.01), x_index])
+        if mag < 0.001:
+            lines_mag = self.rect_mag.update([20 * np.log10(0.001), x_index])
             lines_phase = self.rect_phase.update([phase, x_index])
         else:
             lines_mag = self.rect_mag.update([20 * np.log10(mag), x_index])
@@ -514,15 +486,18 @@ def onClick(event):
 fig = plt.figure(1, figsize=(10, 10))
 
 ax_polar_cmbd = plt.subplot(3, 2, 1, projection='polar')
-# ax_polar_cmbd.set_rmax(20)
-
+if FT_mode:
+    # plot the input_vector points on polar plot
+    for point in input_vector:
+        mag, theta = cm.polar(point)
+        ax_polar_cmbd.plot(theta, mag, 'b*')
 
 ax_rect_cmbd = plt.subplot(3, 2, 2)
 
 # fft plot of the sum of signals in rotating_phasors
 sum_sig = sum(rotating_phasors)
 yf = fft(sum_sig)
-xf = fftfreq(num_sampls, 1 / fs)
+xf = fftfreq(num_sampls, 1 / Fs)
 ax_rect_fft = plt.subplot(3, 2, 3)
 ax_rect_fft.set_xlabel('Frequency [kHz]')
 ax_rect_fft.set_ylabel('Magnitude')
@@ -536,7 +511,7 @@ ax_rect_phase = plt.subplot(3, 2, 5)
 
 scope_main = Scope(len(rotating_phasors))
 
-interval = 40
+interval = 4
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "sineEmitter" to produce data for the update func

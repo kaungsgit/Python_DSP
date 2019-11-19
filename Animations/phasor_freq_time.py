@@ -87,9 +87,9 @@ spin_orig_center = False
 # this flag must be set to False if you're working with input_vector and FT_mode
 pass_direct_phasor_list = False
 
-FT_mode = False
+FT_mode = True
 double_sided_FFT = True
-input_vector = np.array([3, 8, 14, 8, 3])
+input_vector = np.array([1, 5, -2-2j])
 N = len(input_vector)
 
 max_mag = np.absolute(input_vector).max()
@@ -295,6 +295,12 @@ class ScopeRectCmbd(object):
 class ScopePolarCmbd(object):
     def __init__(self, ax, num_sigs):
         self.ax_p = ax
+        if self.ax_p.name == 'polar':
+            self.polar_plot = True
+        else:
+            self.polar_plot = False
+            self.ax_p.grid(True)
+            self.ax_p.set_aspect('equal', adjustable='box')
 
         self.mag_accu = []
         self.theta_accu = []
@@ -322,11 +328,27 @@ class ScopePolarCmbd(object):
         self.sig_lines_p_cmbd[0].set_label('Combined Phasor')
         self.sig_lines_p_cmbd[2].set_label('In-phase or Real Projection')
         self.sig_lines_p_cmbd[3].set_label('Quadrature or Imag Projection')
-        self.ax_p.legend(bbox_to_anchor=(2.3, 1), loc="upper right")
+
+        if self.polar_plot:
+            self.ax_p.legend(bbox_to_anchor=(2.3, 1), loc="upper right")
+        else:
+            # self.ax_p.legend()
+            self.ax_p.legend(bbox_to_anchor=(2.3, 1), loc="upper right")
 
         # self.ax_p.set_title('Rotating Phasors in Polar Plot')
 
-        self.ax_p.set_rmax(max_mag + 2)
+        if self.polar_plot:
+            self.ax_p.set_rmax(max_mag + 2)
+        else:
+            min_xy = round(-max_mag - 1)
+            max_xy = round(max_mag + 1)
+            self.ax_p.set_xlim(min_xy, max_xy)
+            self.ax_p.set_ylim(min_xy, max_xy)
+            #
+            # self.ax_p.set_xticks(np.arange(min_xy, max_xy, step=round((max_xy-min_xy)/5)))
+            # self.ax_p.set_yticks(np.arange(min_xy, max_xy, step=round((max_xy-min_xy)/5)))
+            pass
+
         self.one_cycle_index = Fs / f0
 
     def update(self, emitted):
@@ -367,8 +389,15 @@ class ScopePolarCmbd(object):
                 mag_y, theta_y = cm.polar(complex(0, y))
 
                 mag_pep, theta_pep = cm.polar(self.prev_end_pts)
+
                 # rotating phasor
-                sig_line_p[0].set_data([theta_pep, theta], [mag_pep, mag])
+                if self.polar_plot:
+                    sig_line_p[0].set_data([theta_pep, theta], [mag_pep, mag])
+                else:
+                    rect_pep = cm.rect(mag_pep, theta_pep)
+                    rect = cm.rect(mag, theta)
+
+                    sig_line_p[0].set_data([rect_pep.real, rect.real], [rect_pep.imag, rect.imag])
 
                 # phasor edge tracing
                 # usually commented out to avoid clutter
@@ -395,9 +424,13 @@ class ScopePolarCmbd(object):
             self.theta_accu_cmbd.append(theta)
 
             # adjust polar r limit
-            if mag >= self.ax_p.get_rmax():
-                self.ax_p.set_rmax(mag + 1)
-
+            if self.polar_plot:
+                if mag >= self.ax_p.get_rmax():
+                    self.ax_p.set_rmax(mag + 1)
+            else:
+                if mag >= self.ax_p.get_xlim()[1] or mag >= self.ax_p.get_ylim()[1]:
+                    self.ax_p.set_xlim(round(-mag - 2), round(mag + 2))
+                    self.ax_p.set_ylim(round(-mag - 2), round(mag + 2))
             cmplx = cm.rect(mag, theta)
             x = cmplx.real
             y = cmplx.imag
@@ -406,16 +439,33 @@ class ScopePolarCmbd(object):
             mag_x, theta_x = cm.polar(complex(x, 0))
             mag_y, theta_y = cm.polar(complex(0, y))
 
-            # rotating phasor
-            self.sig_lines_p_cmbd[0].set_data([theta, theta], [0, mag])
+            if self.polar_plot:
+                # rotating phasor
+                self.sig_lines_p_cmbd[0].set_data([theta, theta], [0, mag])
 
-            # phasor edge tracing
-            self.sig_lines_p_cmbd[1].set_data(self.theta_accu_cmbd, self.mag_accu_cmbd)
+                # # phasor edge tracing
+                self.sig_lines_p_cmbd[1].set_data(self.theta_accu_cmbd, self.mag_accu_cmbd)
+                #
+                # # # projection to real tracing
+                self.sig_lines_p_cmbd[2].set_data([theta_x, theta_x], [0, mag_x])
+                # # # projection to imag tracing
+                self.sig_lines_p_cmbd[3].set_data([theta_y, theta_y], [0, mag_y])
 
-            # # projection to real tracing
-            self.sig_lines_p_cmbd[2].set_data([theta_x, theta_x], [0, mag_x])
-            # # projection to imag tracing
-            self.sig_lines_p_cmbd[3].set_data([theta_y, theta_y], [0, mag_y])
+            else:
+                # rect_pep = cm.rect(mag, theta)
+                rect = cm.rect(mag, theta)
+
+                self.sig_lines_p_cmbd[0].set_data([0, rect.real], [0, rect.imag])
+
+                theta_accu_cmbd = np.array(self.theta_accu_cmbd)
+                mag_accu_cmbd = np.array(self.mag_accu_cmbd)
+                x1 = mag_accu_cmbd * np.cos(theta_accu_cmbd)
+                y1 = mag_accu_cmbd * np.sin(theta_accu_cmbd)
+                self.sig_lines_p_cmbd[1].set_data(x1, y1)
+
+                self.sig_lines_p_cmbd[2].set_data([0, x], [0, 0])
+
+                self.sig_lines_p_cmbd[3].set_data([0, 0], [0, y])
 
             # plt.draw()
         return list(flatten(self.sig_lines_p + self.sig_lines_p_cmbd))
@@ -486,11 +536,19 @@ def onClick(event):
 fig = plt.figure(1, figsize=(10, 10))
 
 ax_polar_cmbd = plt.subplot(3, 2, 1, projection='polar')
+# ax_polar_cmbd = plt.subplot(3, 2, 1)
+# ax_polar_cmbd.set_xlim(-10, 10)
+# ax_polar_cmbd.set_ylim(-10, 10)
+
+
 if FT_mode:
     # plot the input_vector points on polar plot
     for point in input_vector:
-        mag, theta = cm.polar(point)
-        ax_polar_cmbd.plot(theta, mag, 'b*')
+        if ax_polar_cmbd.name == 'polar':
+            mag, theta = cm.polar(point)
+            ax_polar_cmbd.plot(theta, mag, 'b*')
+        else:
+            ax_polar_cmbd.plot(point.real, point.imag, 'b*')
 
 ax_rect_cmbd = plt.subplot(3, 2, 2)
 

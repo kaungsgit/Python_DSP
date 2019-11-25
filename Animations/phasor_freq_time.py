@@ -87,9 +87,9 @@ spin_orig_center = False
 # this flag must be set to False if you're working with input_vector and FT_mode
 pass_direct_phasor_list = False
 
-FT_mode = False
+FT_mode = True
 double_sided_FFT = True
-input_vector = np.array([1, 5, 0, 4, -1])
+input_vector = np.array([1, 5, -2-2j])
 N = len(input_vector)
 
 max_mag = np.absolute(input_vector).max()
@@ -535,8 +535,8 @@ def onClick(event):
 
 fig = plt.figure(1, figsize=(10, 10))
 
-# ax_polar_cmbd = plt.subplot(3, 2, 1, projection='polar')
-ax_polar_cmbd = plt.subplot(3, 2, 1)
+ax_polar_cmbd = plt.subplot(3, 2, 1, projection='polar')
+# ax_polar_cmbd = plt.subplot(3, 2, 1)
 # ax_polar_cmbd.set_xlim(-10, 10)
 # ax_polar_cmbd.set_ylim(-10, 10)
 
@@ -569,7 +569,7 @@ ax_rect_phase = plt.subplot(3, 2, 5)
 
 scope_main = Scope(len(rotating_phasors))
 
-interval = 40
+interval = 4
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "sineEmitter" to produce data for the update func

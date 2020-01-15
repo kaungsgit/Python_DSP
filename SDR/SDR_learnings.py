@@ -6,7 +6,7 @@ import sys
 import pprint as pp
 import numpy.random as random
 
-sys.path.append("../")
+# sys.path.append("../")
 import custom_tools.fftplot as fftplot
 from scipy.fftpack import fft, fftshift, fftfreq, ifft
 
@@ -39,7 +39,7 @@ alpha = 0.3  # Roll-off factor (set between 0 and 1)
 pulse = komm.RaisedCosinePulse(rolloff=alpha, length_in_symbols=sym_length)
 t = np.linspace(-sym_length / 2, sym_length / 2, sym_length * oversamp)
 plt.figure()
-
+plt.show()
 # the function returns a non-causal impulse response, so added indexes to x axis
 plt.plot(pulse.impulse_response(t))
 plt.plot(pulse.impulse_response(t), 'o')
@@ -99,5 +99,50 @@ fftplot.plot_spectrum(*fftplot.winfft(tx_shaped, fs=sym_rate * oversamp), drange
 
 plt.title("Spectrum")
 # plt.grid()
+
+# eye diagram
+
+
+num_cycles = 4  # number of symbols to display in eye diagram
+windows = 200  # a window is one path across display shown
+
+# resample data to at least 64x per symbol to emulate continuous waveform
+
+resamp = int(np.ceil(64 / oversamp))
+tx_resamp = sig.resample(tx_shaped, len(tx_shaped) * resamp)
+
+samp_per_win = oversamp * resamp * num_cycles
+
+# divide by number of samples per win and then
+# pad zeros to next higher multiple using tx_eye = np.array(tx_shaped),
+# tx_eye.resize(N)
+
+N = len(tx_resamp) // samp_per_win
+
+tx_eye = np.array(tx_resamp)
+tx_eye.resize(N * samp_per_win)
+
+grouped = np.reshape(tx_resamp, [N, samp_per_win])
+
+transient = sym_length // 2
+eye = np.real(grouped.T)
+
+# create an xaxis in samples np.shape(eye) gives the
+# 2 dimensional size of the eye data and the first element
+# is the interpolated number of samples along the x axis
+nsamps = np.shape(eye)[0]
+xaxis = np.arange(nsamps) / resamp
+
+plt.figure()
+
+# plot showing continuous trajectory of
+plt.plot(xaxis, eye[:, transient:transient + windows])
+
+# actual sample locations
+plt.plot(xaxis[::resamp], eye[:, transient:transient + windows][::resamp], 'b.')
+plt.title("Eye Diagram")
+plt.xlabel('Samples')
+plt.grid()
+plt.show()
 
 plt.show()

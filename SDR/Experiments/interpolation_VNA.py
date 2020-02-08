@@ -24,16 +24,20 @@ plt.ylabel('Amplitude (dB)')
 
 freq_step = np.mean(np.gradient(freq))
 print('freq_step is {}MHz'.format(freq_step / 1e6))
-# need 25MHz freq_step, so 17/10*25 = 42.5 => 10/17*42.5 = 25
+# need 25MHz freq_step, so 17/10*25 = 42.5
 fs = 1 / freq_step
 
 plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss, fs=fs), drange=120)
 
-insert_loss_1 = np.zeros(len(insert_loss) * 4)
-insert_loss_1[::4] = insert_loss
+interp = 17
+insert_loss_1 = np.zeros(len(insert_loss) * interp)
+insert_loss_1[::interp] = insert_loss
 
 plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss_1, fs=fs), drange=120)
+
+# interpolation filter
+
 
 plt.show()

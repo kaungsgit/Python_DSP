@@ -54,6 +54,9 @@ interp = 17
 insert_loss_1 = np.zeros(len(insert_loss) * interp)
 insert_loss_1[::interp] = insert_loss
 
+freq_step_post_interp = freq_step / interp
+freq_interp = np.arange(0.3e6, 8.5e9 + freq_step_post_interp * 17, freq_step_post_interp)
+
 plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss_1, fs=fs), drange=120)
 
@@ -168,10 +171,12 @@ fftplot.plot_spectrum(*fftplot.winfft(insert_loss_filt, fs=fs), drange=150)
 plt.title("Spectrum after Zero Insert 4x and Filtered")
 
 plt.figure()
-plt.plot(freq, insert_loss, label = "Original")
-plt.figure()
-plt.plot(insert_loss_filt, label = "Interpolated")
-plt.plot(insert_loss_1, '.', label = "Zero Inserted")
+plt.plot(freq_interp[::interp], insert_loss, label="Original")
+# plt.figure()
+shift = 35
+func = lambda x: None if (x is 0) else -x
+plt.plot(freq_interp[0:func(shift)], insert_loss_filt[shift:], label = "Interpolated")
+# plt.plot(freq_interp, insert_loss_1, '.', label="Zero Inserted")
 
 # plt.axis([.23, .28, -1, 1])
 plt.grid()

@@ -50,15 +50,19 @@ print('Fs is {}'.format(fs))
 plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss, fs=fs), drange=120)
 
-interp = 20
-insert_loss_1 = np.zeros(len(insert_loss) * interp)
-insert_loss_1[::interp] = insert_loss
+interp = 17
+deci = 10
+insert_loss_zeros_int = np.zeros(len(insert_loss) * interp)
+insert_loss_zeros_int[::interp] = insert_loss
 
 freq_step_post_interp = freq_step / interp
 freq_interp = np.arange(0.3e6, 8.5e9 + freq_step_post_interp * interp, freq_step_post_interp)
 
+freq_step_post_deci = freq_step_post_interp * deci
+freq_deci = np.arange(0.3e6, 8.5e9 + freq_step_post_deci / deci, freq_step_post_deci)
+
 plt.figure()
-fftplot.plot_spectrum(*fftplot.winfft(insert_loss_1, fs=fs), drange=120)
+fftplot.plot_spectrum(*fftplot.winfft(insert_loss_zeros_int, fs=fs), drange=120)
 
 # interpolation filter
 # design multiband filter
@@ -153,7 +157,7 @@ plt.title('Interpolation filter frequency response')
 
 w, h = sig.freqz(coeff, whole=True, fs=fs)
 plt.figure()
-wsig, hsig = fftplot.winfft(insert_loss_1, fs=fs)
+wsig, hsig = fftplot.winfft(insert_loss_zeros_int, fs=fs)
 
 plt.plot(wsig, db(hsig))
 
@@ -164,11 +168,11 @@ plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude [dB]')
 
 # filter signal with zero-insert using interpolation fitler
-insert_loss_filt = sig.lfilter(coeff, 1, insert_loss_1)
+insert_loss_filt = sig.lfilter(coeff, 1, insert_loss_zeros_int)
 
 plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss_filt, fs=fs), drange=150)
-plt.title("Spectrum after Zero Insert 4x and Filtered")
+plt.title("Spectrum after Zero Insert {}x and Filtered".format(interp))
 
 plt.figure()
 plt.plot(freq_interp[::interp], insert_loss, label="Original")
@@ -176,7 +180,7 @@ plt.plot(freq_interp[::interp], insert_loss, label="Original")
 shift = 2 * interp + 1
 func = lambda x: None if (x is 0) else -x
 plt.plot(freq_interp[0:func(shift)], insert_loss_filt[shift:], label="Interpolated")
-# plt.plot(freq_interp, insert_loss_1, '.', label="Zero Inserted")
+plt.plot(freq_interp, insert_loss_zeros_int, '.', label="Zero Inserted")
 
 # plt.axis([.23, .28, -1, 1])
 plt.grid()
@@ -185,6 +189,27 @@ plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.title('Original and Interpolated Signal')
 plt.legend()
-plt.show()
+
+insert_loss_zeros_deci = np.zeros(len(insert_loss_filt))
+insert_loss_zeros_deci[::deci] = deci * insert_loss_filt[::deci]
+plt.figure()
+fftplot.plot_spectrum(*fftplot.winfft(insert_loss_zeros_deci, fs=fs), drange=120)
+plt.title("Spectrum - Band Limited Noise - Zero Insert")
+
+insert_loss_deci = insert_loss_zeros_deci[::deci] / deci
+plt.figure()
+fftplot.plot_spectrum(*fftplot.winfft(insert_loss_deci, fs=fs / deci), drange=120)
+plt.title("Spectrum - Band Limited Noise - Decimated to fs = {} KHz".format(fs / deci))
+
+plt.figure()
+plt.plot(freq_interp[::interp], insert_loss, label="Original")
+plt.plot(freq_interp, insert_loss_filt, label="Interpolated")
+plt.plot(freq_interp[::deci], insert_loss_deci, '.', label="Decimated")
+plt.grid()
+plt.xlabel("Time [s]")
+plt.ylabel("Magnitude")
+plt.title('Interpolated and Decimated Signal')
+plt.legend()
+
 
 plt.show()

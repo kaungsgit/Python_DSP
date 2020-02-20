@@ -211,39 +211,53 @@ plt.ylabel("Magnitude")
 plt.title('Interpolated and Decimated Signal')
 plt.legend()
 
+# interpolation with CIC
+numz_1 = [1, -1]
+denz_1 = [1]
+# worN = np.linspace(-np.pi, np.pi, 100)
+w, h = sig.freqz(numz_1, denz_1, whole=True, fs=fs)
+plt.figure()
+plt.plot(w - fs / 2, fft.fftshift(db(h)))
+# plt.axis([-np.pi, np.pi, 0, max(np.abs(h))])
+plt.grid()
+plt.xlabel('Frequency [Hz]')
+plt.ylabel('Magnitude')
+plt.title('Frequency Response for moving avg filter')
+
 numz = [1, 0]
 denz = [1, -1]
-
 # worN = np.linspace(-np.pi, np.pi, 100)
 w, h = sig.freqz(numz, denz, whole=True, fs=fs)
 plt.figure()
 plt.plot(w - fs / 2, fft.fftshift(db(h)))
 # plt.axis([-np.pi, np.pi, 0, max(np.abs(h))])
 plt.grid()
-plt.xlabel('Frequency [rad/sample]')
+plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude')
-plt.title('Frequency Response for 2 point moving average')
+plt.title('Frequency Response for rectangular integrator')
 
-
-# filter signal with zero-insert using interpolation fitler
-insert_loss_filt_integ = sig.lfilter([1, -1], 1, insert_loss)
+# filter orig signal using moving average
+insert_loss_postComb = sig.lfilter([1, -1], 1, insert_loss)
 
 plt.figure()
-fftplot.plot_spectrum(*fftplot.winfft(insert_loss_filt_integ, fs=fs), drange=150)
-plt.title("Spectrum after Integrator".format(interp))
+fftplot.plot_spectrum(*fftplot.winfft(insert_loss_postComb, fs=fs), drange=150)
+plt.title("Spectrum after comb".format(interp))
 
-insert_loss_upSamp = np.zeros(len(insert_loss_filt_integ) * interp)
-insert_loss_upSamp[::interp] = insert_loss_filt_integ
+insert_loss_upSamp = np.zeros(len(insert_loss_postComb) * interp)
+insert_loss_upSamp[::interp] = insert_loss_postComb
+
+plt.figure()
+fftplot.plot_spectrum(*fftplot.winfft(insert_loss_upSamp, fs=fs), drange=150)
+plt.title("Spectrum after up sampling by {}".format(interp))
 
 insert_loss_postInteg = sig.lfilter([1, 0], [1, -1], insert_loss_upSamp)
 
 plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss_postInteg, fs=fs), drange=150)
-plt.title("Spectrum after interpolation".format(interp))
+plt.title("Spectrum after integrator".format(interp))
 
 plt.figure()
 plt.plot(insert_loss_postInteg)
 plt.plot(insert_loss_filt)
-
 
 plt.show()

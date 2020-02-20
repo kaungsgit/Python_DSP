@@ -201,7 +201,7 @@ plt.plot(freq_interp, insert_loss_zeros_int, '.', label="Zero Inserted")
 # plt.axis([.23, .28, -1, 1])
 plt.grid()
 
-plt.xlabel("Time [s]")
+plt.xlabel("Freq [Hz]")
 plt.ylabel("Magnitude")
 plt.title('Original and Interpolated Signal')
 plt.legend()
@@ -222,17 +222,17 @@ plt.plot(freq_interp[::interp], insert_loss, label="Original")
 plt.plot(freq_interp, insert_loss_filt, label="Interpolated")
 plt.plot(freq_interp[::deci], insert_loss_deci, '.', label="Decimated")
 plt.grid()
-plt.xlabel("Time [s]")
+plt.xlabel("Freq [Hz]")
 plt.ylabel("Magnitude")
 plt.title('Interpolated and Decimated Signal')
 plt.legend()
 
 # interpolation with CIC
 # comb aka moving avg
-numz_1 = [1, -1]
-denz_1 = [1]
+numz_comb = [1, -1]
+denz_comb = [1]
 # worN = np.linspace(-np.pi, np.pi, 100)
-w, h = sig.freqz(numz_1, denz_1, whole=True, fs=fs)
+w, h = sig.freqz(numz_comb, denz_comb, whole=True, fs=fs)
 plt.figure()
 plt.plot(w - fs / 2, fft.fftshift(db(h)))
 # plt.axis([-np.pi, np.pi, 0, max(np.abs(h))])
@@ -241,6 +241,7 @@ plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude')
 plt.title('Frequency Response for moving avg filter')
 
+# sallenKey filter
 numz = [0, 0.009055917006062704]
 denz = [1, -1.80967484, 0.81873075]
 # worN = np.linspace(-np.pi, np.pi, 100)
@@ -248,10 +249,15 @@ w, h = sig.freqz(numz, denz, whole=True, fs=2 * np.pi * 1e6, worN=np.logspace(2,
 plt.figure()
 responsePlot(w, h, 'Digital Filter Freq Response from SallenKey Class 3')
 
-# integrator
-numz = [0, 1]
-denz = [1, -1]
-w, h = sig.freqz(numz, denz, whole=True, fs=fs)
+# rect integrator
+numz_integ = [0, 1]
+denz_integ = [1, -1]
+
+# # trap integrator
+# numz_integ = [1, 1]
+# denz_integ = [2, -2]
+
+w, h = sig.freqz(numz_integ, denz_integ, whole=True, fs=fs)
 
 plt.figure()
 plt.plot(w - fs / 2, fft.fftshift(db(h)))
@@ -262,7 +268,7 @@ plt.ylabel('Magnitude')
 plt.title('Frequency Response for rectangular integrator')
 
 # filter orig signal using moving average
-insert_loss_postComb = sig.lfilter([1, -1], 1, insert_loss)
+insert_loss_postComb = sig.lfilter(numz_comb, denz_comb, insert_loss)
 
 plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss_postComb, fs=fs), drange=150)
@@ -275,7 +281,7 @@ plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss_upSamp, fs=fs), drange=150)
 plt.title("Spectrum after up sampling by {}".format(interp))
 
-insert_loss_postInteg = sig.lfilter([1, 0], [1, -1], insert_loss_upSamp)
+insert_loss_postInteg = sig.lfilter(numz_integ, denz_integ, insert_loss_upSamp)
 
 plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(insert_loss_postInteg, fs=fs), drange=150)
@@ -288,9 +294,9 @@ plt.title("Spectrum after integrator".format(interp))
 plt.figure()
 plt.plot(freq_interp[::interp], insert_loss, label="Original")
 # plt.plot(freq_interp, insert_loss_filt, label="Interpolated")
-plt.plot(freq_interp, insert_loss_postInteg, label="CIC Interpolated")
+plt.plot(freq_interp, insert_loss_postInteg, '.', label="CIC Interpolated")
 plt.grid()
-plt.xlabel("Time [s]")
+plt.xlabel("Freq [Hz]")
 plt.ylabel("Magnitude")
 plt.title('Interpolated and Decimated Signal')
 plt.legend()

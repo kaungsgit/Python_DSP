@@ -25,6 +25,22 @@ with open('./Data/insertion_loss_cable.csv') as f:
         freq.append(float(row[0]))
         insert_loss.append(float(row[1]))
 
+
+def responsePlot(w, h, title):
+    plt.subplot(2, 1, 1)
+    plt.semilogx(w / (2 * np.pi), 20 * np.log10(np.abs(h)))
+    plt.grid()
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('Magnitude [dB]')
+    plt.title(title)
+    plt.subplot(2, 1, 2)
+    plt.semilogx(w / (2 * np.pi), np.unwrap(np.angle(h)) * 360 / (2 * np.pi))
+    plt.grid()
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('Angle [deg]')
+    # plt.show()
+
+
 n = len(insert_loss)
 freq = np.array(freq)
 insert_loss = np.array(insert_loss)
@@ -212,6 +228,7 @@ plt.title('Interpolated and Decimated Signal')
 plt.legend()
 
 # interpolation with CIC
+# comb aka moving avg
 numz_1 = [1, -1]
 denz_1 = [1]
 # worN = np.linspace(-np.pi, np.pi, 100)
@@ -224,10 +241,18 @@ plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude')
 plt.title('Frequency Response for moving avg filter')
 
-numz = [1, 0]
-denz = [1, -1]
+numz = [0, 0.009055917006062704]
+denz = [1, -1.80967484, 0.81873075]
 # worN = np.linspace(-np.pi, np.pi, 100)
+w, h = sig.freqz(numz, denz, whole=True, fs=2 * np.pi * 1e6, worN=np.logspace(2, 6, 1000))
+plt.figure()
+responsePlot(w, h, 'Digital Filter Freq Response from SallenKey Class 3')
+
+# integrator
+numz = [0, 1]
+denz = [1, -1]
 w, h = sig.freqz(numz, denz, whole=True, fs=fs)
+
 plt.figure()
 plt.plot(w - fs / 2, fft.fftshift(db(h)))
 # plt.axis([-np.pi, np.pi, 0, max(np.abs(h))])

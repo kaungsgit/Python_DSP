@@ -11,6 +11,7 @@ sys.path.append("../")
 import custom_tools.fftplot as fftplot
 
 import control as con
+import control.matlab as ctrl
 
 
 def db(x):
@@ -59,7 +60,7 @@ print([r, p, k])
 
 # combine terms
 T = np.pi / 10
-print('f is {}'.format(1/T))
+print('f is {}'.format(1 / T))
 sys1 = con.tf([r[0], 0], [1, -np.exp(p[0] * T)], T)
 print(sys1)
 sys2 = con.tf([r[1], 0], [1, -np.exp(p[1] * T)], T)
@@ -131,12 +132,12 @@ plt.legend()
 
 z = con.tf('z')
 zm1 = 1 / z
-sys_integ = z / (z - 1)
-sys_integ = 1 + 1 / z
+# sys_uT = z / (z - 1)
+sys_uT = 1 + 1 / z
 
-sys_integ = 1 + z ** -1 + z ** -2
+# sys_uT = 1 + z ** -1 + z ** -2
 
-tc, youtc = con.impulse_response(sys_integ)
+tc, youtc = con.impulse_response(sys_uT)
 
 plt.figure()
 plt.plot(tc, youtc, 'o')
@@ -145,10 +146,9 @@ plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
 
-
 # plot frequency response
 omega = 2 * np.pi * np.logspace(-3, .2, 100)
-magd, phased, omega = con.freqresp(T * sys_integ, omega)
+magd, phased, omega = con.freqresp(T * sys_uT, omega)
 
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
 # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
@@ -161,10 +161,9 @@ plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude [dB]')
 plt.title('Frequency Response - Discrete System')
 
-
 # plot frequency response
 omega = 2 * np.pi * np.linspace(0, 1, 100)
-magd, phased, omega = con.freqresp(T * sys_integ, omega)
+magd, phased, omega = con.freqresp(T * sys_uT, omega)
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
 # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
 magd = np.squeeze(magd)
@@ -176,5 +175,14 @@ plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude [dB]')
 plt.title('Frequency Response - Discrete System - linear scale')
 
+con.pzmap(sys_uT)
+phase = np.linspace(0, 2 * np.pi, 500)
+plt.plot(np.real(np.exp(1j * phase)), np.imag(np.exp(1j * phase)), 'r--')
+plt.axis('equal')
 
+# using matlab like syntax, control.matlab
+yout, t_val = ctrl.impulse(sys_uT)
+plt.figure()
+plt.stem(t_val, yout, use_line_collection=True)
+plt.title('Impulse response using control.matlab')
 plt.show()

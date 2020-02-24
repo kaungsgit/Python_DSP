@@ -59,6 +59,7 @@ print([r, p, k])
 
 # combine terms
 T = np.pi / 10
+print('f is {}'.format(1/T))
 sys1 = con.tf([r[0], 0], [1, -np.exp(p[0] * T)], T)
 print(sys1)
 sys2 = con.tf([r[1], 0], [1, -np.exp(p[1] * T)], T)
@@ -127,5 +128,53 @@ plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude [dB]')
 plt.title('Frequency Response - Comparison')
 plt.legend()
+
+z = con.tf('z')
+zm1 = 1 / z
+sys_integ = z / (z - 1)
+sys_integ = 1 + 1 / z
+
+sys_integ = 1 + z ** -1 + z ** -2
+
+tc, youtc = con.impulse_response(sys_integ)
+
+plt.figure()
+plt.plot(tc, youtc, 'o')
+plt.title("Impulse Response - discrete System")
+plt.xlabel("Time [s]")
+plt.ylabel("Magnitude")
+plt.grid()
+
+
+# plot frequency response
+omega = 2 * np.pi * np.logspace(-3, .2, 100)
+magd, phased, omega = con.freqresp(T * sys_integ, omega)
+
+# freq response returns mag and phase as [[[mag]]], [[[phase]]]
+# squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
+magd = np.squeeze(magd)
+phased = np.squeeze(phased)
+plt.figure()
+plt.semilogx(omega, db(magd))
+plt.grid()
+plt.xlabel('Frequency [Hz]')
+plt.ylabel('Magnitude [dB]')
+plt.title('Frequency Response - Discrete System')
+
+
+# plot frequency response
+omega = 2 * np.pi * np.linspace(0, 1, 100)
+magd, phased, omega = con.freqresp(T * sys_integ, omega)
+# freq response returns mag and phase as [[[mag]]], [[[phase]]]
+# squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
+magd = np.squeeze(magd)
+phased = np.squeeze(phased)
+plt.figure()
+plt.plot(omega, db(magd))
+plt.grid()
+plt.xlabel('Frequency [Hz]')
+plt.ylabel('Magnitude [dB]')
+plt.title('Frequency Response - Discrete System - linear scale')
+
 
 plt.show()

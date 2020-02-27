@@ -21,6 +21,9 @@ def db(x):
     return 20 * np.log10(np.abs(x_safe))
 
 
+Fs = 10 / np.pi
+T = 1 / Fs
+
 # create continuous time transfer function (following presentation example in back-up slides)
 sysc = con.tf(1, [1, 2, 2, 0])
 
@@ -39,15 +42,15 @@ plt.grid()
 
 # plot frequency response
 
-omega = 2 * np.pi * np.logspace(-3, .2, 100)
-magc, phasec, omega = con.freqresp(sysc, omega)
+w = 2 * np.pi * np.logspace(-3, np.log10(0.5 * Fs), 100)
+magc, phasec, w = con.freqresp(sysc, w)
 
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
 # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
 magc = np.squeeze(magc)
 phasec = np.squeeze(phasec)
 plt.figure()
-plt.semilogx(omega, db(magc))
+plt.semilogx(w / (2 * np.pi), db(magc))
 plt.grid()
 plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude [dB]')
@@ -59,7 +62,8 @@ plt.title('Frequency Response - Continuous System')
 print([r, p, k])
 
 # combine terms
-T = np.pi / 10
+
+
 print('f is {}'.format(1 / T))
 sys1 = con.tf([r[0], 0], [1, -np.exp(p[0] * T)], T)
 print(sys1)
@@ -95,15 +99,15 @@ plt.grid()
 plt.legend()
 
 # plot frequency response
-omega = 2 * np.pi * np.logspace(-3, .2, 100)
-magd, phased, omega = con.freqresp(T * sysd, omega)
+w = 2 * np.pi * np.logspace(-3, np.log10(0.5 * Fs), 100)
+magd, phased, w = con.freqresp(T * sysd, w)
 
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
 # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
 magd = np.squeeze(magd)
 phased = np.squeeze(phased)
 plt.figure()
-plt.semilogx(omega, db(magd))
+plt.semilogx(w / (2 * np.pi), db(magd))
 plt.grid()
 plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude [dB]')
@@ -122,67 +126,69 @@ plt.grid()
 plt.legend()
 
 plt.figure()
-plt.semilogx(omega, db(magc), label='Continous')
-plt.semilogx(omega, db(magd), '--', label='Discrete')
+plt.semilogx(w / (2 * np.pi), db(magc), label='Continous')
+plt.semilogx(w / (2 * np.pi), db(magd), '--', label='Discrete')
 plt.grid()
 plt.xlabel('Frequency [Hz]')
 plt.ylabel('Magnitude [dB]')
 plt.title('Frequency Response - Comparison')
 plt.legend()
 
-z = con.tf('z')
-zm1 = 1 / z
-# sys_uT = z / (z - 1)
-sys_uT = 1 + 1 / z
+# z = con.tf('z')
+# zm1 = 1 / z
+# # sys_uT = z / (z - 1)
+# sys_uT = 1 + 1 / z
+#
+# # sys_uT = 1 + z ** -1 + z ** -2
+#
+# tc, youtc = con.impulse_response(sys_uT)
+#
+# plt.figure()
+# plt.plot(tc, youtc, 'o')
+# plt.title("Impulse Response - discrete System")
+# plt.xlabel("Time [s]")
+# plt.ylabel("Magnitude")
+# plt.grid()
+#
+# # plot frequency response
+# omega = 2 * np.pi * np.logspace(-3, .2, 100)
+# magd, phased, omega = con.freqresp(T * sys_uT, omega)
+#
+# # freq response returns mag and phase as [[[mag]]], [[[phase]]]
+# # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
+# magd = np.squeeze(magd)
+# phased = np.squeeze(phased)
+# plt.figure()
+# plt.semilogx(omega, db(magd))
+# plt.grid()
+# plt.xlabel('Frequency [Hz]')
+# plt.ylabel('Magnitude [dB]')
+# plt.title('Frequency Response - Discrete System')
+#
+# # plot frequency response
+# omega = 2 * np.pi * np.linspace(0, 1, 100)
+# magd, phased, omega = con.freqresp(T * sys_uT, omega)
+# # freq response returns mag and phase as [[[mag]]], [[[phase]]]
+# # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
+# magd = np.squeeze(magd)
+# phased = np.squeeze(phased)
+# plt.figure()
+# plt.plot(omega, db(magd))
+# plt.grid()
+# plt.xlabel('Frequency [Hz]')
+# plt.ylabel('Magnitude [dB]')
+# plt.title('Frequency Response - Discrete System - linear scale')
+#
+# con.pzmap(sys_uT)
+# phase = np.linspace(0, 2 * np.pi, 500)
+# plt.plot(np.real(np.exp(1j * phase)), np.imag(np.exp(1j * phase)), 'r--')
+# plt.axis('equal')
+#
+# # using matlab like syntax, control.matlab
+# yout, t_val = ctrl.impulse(sys_uT)
+# plt.figure()
+# plt.stem(t_val, yout, use_line_collection=True)
+# plt.title('Impulse response using control.matlab')
 
-# sys_uT = 1 + z ** -1 + z ** -2
 
-tc, youtc = con.impulse_response(sys_uT)
-
-plt.figure()
-plt.plot(tc, youtc, 'o')
-plt.title("Impulse Response - discrete System")
-plt.xlabel("Time [s]")
-plt.ylabel("Magnitude")
-plt.grid()
-
-# plot frequency response
-omega = 2 * np.pi * np.logspace(-3, .2, 100)
-magd, phased, omega = con.freqresp(T * sys_uT, omega)
-
-# freq response returns mag and phase as [[[mag]]], [[[phase]]]
-# squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
-magd = np.squeeze(magd)
-phased = np.squeeze(phased)
-plt.figure()
-plt.semilogx(omega, db(magd))
-plt.grid()
-plt.xlabel('Frequency [Hz]')
-plt.ylabel('Magnitude [dB]')
-plt.title('Frequency Response - Discrete System')
-
-# plot frequency response
-omega = 2 * np.pi * np.linspace(0, 1, 100)
-magd, phased, omega = con.freqresp(T * sys_uT, omega)
-# freq response returns mag and phase as [[[mag]]], [[[phase]]]
-# squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
-magd = np.squeeze(magd)
-phased = np.squeeze(phased)
-plt.figure()
-plt.plot(omega, db(magd))
-plt.grid()
-plt.xlabel('Frequency [Hz]')
-plt.ylabel('Magnitude [dB]')
-plt.title('Frequency Response - Discrete System - linear scale')
-
-con.pzmap(sys_uT)
-phase = np.linspace(0, 2 * np.pi, 500)
-plt.plot(np.real(np.exp(1j * phase)), np.imag(np.exp(1j * phase)), 'r--')
-plt.axis('equal')
-
-# using matlab like syntax, control.matlab
-yout, t_val = ctrl.impulse(sys_uT)
-plt.figure()
-plt.stem(t_val, yout, use_line_collection=True)
-plt.title('Impulse response using control.matlab')
 plt.show()

@@ -12,6 +12,10 @@ import custom_tools.handyfuncs as hf
 import control as con
 import control.matlab as mctrl
 
+# Handles both s and z domain
+# - z domain default Fs is 1
+# - s domain fstop can be set through fstop_c
+
 T = np.pi / 100  # sampling period
 Fs = 1 / T
 print('Sampling rate is {}Hz'.format(1 / T))

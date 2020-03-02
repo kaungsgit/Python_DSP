@@ -23,6 +23,7 @@ zm1 = 1 / z
 s = con.tf('s')
 
 Fs = 10 / np.pi
+# Fs = 100
 print('Sampling rate is {}'.format(Fs))
 T = 1 / Fs
 
@@ -30,9 +31,17 @@ T = 1 / Fs
 # sysc = con.tf(1, [1, 2, 2, 0])
 # sysc = con.tf(1, [1, 0])
 
-# sysc = 1 / (s ** 3 + 2 * s ** 2 + 2 * s + 0)
+K = 3.9
+sysc = K * 1 / (s ** 3 + 2 * s ** 2 + 2 * s + 0)
 # sysc = 1 / ((s + 1j) * (s - 1j))
-sysc = 1/s
+# sysc = 1 / s
+
+# 2nd order system with wn and zeta
+fn = 1
+wn = 2 * np.pi * fn
+zeta = 0.2
+# sysc = wn ** 2 / (s ** 2 + 2 * zeta * wn * s + wn ** 2)
+
 print(sysc)
 
 c2d_method = 'impulse'
@@ -44,6 +53,15 @@ tc, youtc = con.impulse_response(sysc)
 plt.figure()
 plt.plot(tc, youtc)
 plt.title("Impulse Response - Continuous System")
+plt.xlabel("Time [s]")
+plt.ylabel("Magnitude")
+plt.grid()
+
+# plot step response
+tc_s, youtc_s = con.step_response(sysc)
+plt.figure()
+plt.plot(tc_s, youtc_s)
+plt.title("Step Response - Continuous System")
 plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
@@ -109,6 +127,17 @@ plt.ylabel("Magnitude")
 plt.grid()
 plt.legend()
 
+td_s, youtd_s = con.step_response(T * sysd, td)
+youtd_s = np.squeeze(youtd_s)
+plt.figure()
+plt.plot(td, youtd_s)
+plt.plot(td, youtd_s, 'o', label='Sample Locations')
+plt.title("Step Response - Discrete System")
+plt.xlabel("Time [s]")
+plt.ylabel("Magnitude")
+plt.grid()
+plt.legend()
+
 # plot frequency response
 w = 2 * np.pi * np.logspace(-3, np.log10(0.5 * Fs), 100)
 magd, phased, w = con.freqresp(T * sysd, w)
@@ -127,10 +156,18 @@ plt.title('Frequency Response - Discrete System')
 # comparing continuous to discrete
 
 plt.figure()
-
 plt.plot(tc, youtc, label='Continous')
 plt.plot(td, youtd, 'o', label='Discrete')
 plt.title("Impulse Response - Comparison")
+plt.xlabel("Time [s]")
+plt.ylabel("Magnitude")
+plt.grid()
+plt.legend()
+
+plt.figure()
+plt.plot(tc_s, youtc_s, label='Continous')
+plt.plot(td_s, youtd_s, 'o', label='Discrete')
+plt.title("Step Response - Comparison")
 plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
@@ -152,5 +189,29 @@ if sysd.isdtime():
     cir_phase = np.linspace(0, 2 * np.pi, 500)
     plt.plot(np.real(np.exp(1j * cir_phase)), np.imag(np.exp(1j * cir_phase)), 'r--')
     plt.axis('equal')
+
+plt.figure()
+real, imag, freq = con.nyquist_plot(sysc)
+scale = K / 2 + 1
+plt.axis([-scale, scale, -scale, scale])
+plt.title('Nyquist plot')
+
+# plt.figure()
+rlist, klist = con.root_locus(sysc, grid=True)
+plt.title('Root Locus')
+
+plt.figure()
+real, imag, freq = con.nyquist_plot(T * sysd, omega=w)
+scale = K / 2 + 1
+plt.axis([-scale, scale, -scale, scale])
+plt.title('Nyquist plot')
+
+# plt.figure()
+rlist, klist = con.root_locus(T * sysd, xlim=(-2, 2), ylim=(-2, 2), grid=True)
+plt.title('Root Locus')
+if sysd.isdtime():
+    cir_phase = np.linspace(0, 2 * np.pi, 500)
+    plt.plot(np.real(np.exp(1j * cir_phase)), np.imag(np.exp(1j * cir_phase)), 'r--')
+    # plt.axis('equal')
 
 plt.show()

@@ -31,7 +31,7 @@ T = 1 / Fs
 # sysc = con.tf(1, [1, 2, 2, 0])
 # sysc = con.tf(1, [1, 0])
 
-K = 3.9
+K = 1
 sysc = K * 1 / (s ** 3 + 2 * s ** 2 + 2 * s + 0)
 # sysc = 1 / ((s + 1j) * (s - 1j))
 # sysc = 1 / s
@@ -126,6 +126,10 @@ plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
 plt.legend()
+
+# bode plots
+con.bode(sysc, w)
+con.bode(T * sysd, w, ls='--')
 
 td_s, youtd_s = con.step_response(T * sysd, td)
 youtd_s = np.squeeze(youtd_s)

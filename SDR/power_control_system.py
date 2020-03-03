@@ -55,30 +55,63 @@ print(GFB)
 K = 0.5
 
 unreduced_Gcl = (K * GF) / (1 + K * GF * GFB)
-print('Using equation GCL = GF/(1+GOL) aka GCL = GF/(1+GF*GFB) with K={}'.format(K))
+print('Using equation GCL_SetLev_Pout = GF/(1+GOL) aka GCL_SetLev_Pout = GF/(1+GF*GFB) with K={}'.format(K))
 # looking at McNeill's notes, you can see GOL should be better termed as Loop Gain
 # Forward Gain GF (from input to output)
 # Feedback Gain GFB (from output to - term of sum node)
 # Loop Gain aka Open Loop Gain GOL (break loop at - term, GF*GFB)
 print(unreduced_Gcl)
 reduced_sys = con.minreal((K * GF) / (1 + K * GF * GFB))
-print('Reduced GCL. It should be the same as GCL returned from con.feedback(K * GF, GFB) with K={}'.format(K))
+print(
+    'Reduced GCL_SetLev_Pout. It should be the same as GCL_SetLev_Pout returned from con.feedback(K * GF, GFB) with K={}'.format(
+        K))
 print(reduced_sys)
 
 n = np.arange(25)
 # step is done on the closed loop system
 
 plt.figure()
-GCL = con.feedback(K * GF, GFB)
-n, yout = con.step_response(1500 * GCL, T=n)
-print('GCL from con.feedback with K={}'.format(K))
-print(GCL)
+GCL_SetLev_Pout = con.feedback(K * GF, GFB)
+# step respoonse for when Set Level is increased from 0 to 1500, GCL_SetLev_Pout => Set Level to Pout
+step_size = 1500  # bits
+n, yout = con.step_response(step_size * GCL_SetLev_Pout, T=n)
+print('GCL_SetLev_Pout from con.feedback with K={}'.format(K))
+print(GCL_SetLev_Pout)
+plt.step(n, (np.squeeze(yout)), label=f"K = {K:0.2f}")
+
+K = 0.25
+GCL_SetLev_Pout = con.feedback(K * GF, GFB)
+# step respoonse for when Set Level is increased from 0 to 1500, GCL_SetLev_Pout => Set Level to Pout
+n, yout = con.step_response(step_size * GCL_SetLev_Pout, T=n)
+plt.step(n, (np.squeeze(yout)), 'r', label=f"K = {K:0.2f}")
+
+plt.legend()
+plt.title("Power Control Loop Step Response")
+plt.ylabel("Power Gain [dB]")
+plt.xlabel("Sample Number")
+
+plt.figure()
+K = 0.5
+GOL_SetLev_Pout = K * GF * GFB
+GCL_Pin_Pout = con.feedback(1, GOL_SetLev_Pout)
+# step respoonse for when Set Level is increased from 0 to 1500
+step_size = 10  # dB
+n, yout = con.step_response(step_size * GCL_Pin_Pout, T=n)
+
+# sys2 = con.tf(0.83155, [1, -1, 0], 1)
+#
+# n, yout = con.step_response(step_size * con.feedback(1, K * sys2), T=n)
+
+print('GCL_SetLev_Pout from con.feedback with K={}'.format(K))
+print(GCL_Pin_Pout)
 
 plt.step(n, (np.squeeze(yout)), label=f"K = {K:0.2f}")
 
 K = 0.25
-GCL = con.feedback(K * GF, GFB)
-n, yout = con.step_response(1500 * GCL, T=n)
+GOL_SetLev_Pout = K * GF * GFB
+GCL_Pin_Pout = con.feedback(1, GOL_SetLev_Pout)
+# step respoonse for when Set Level is increased from 0 to 1500
+n, yout = con.step_response(step_size * GCL_Pin_Pout, T=n)
 plt.step(n, (np.squeeze(yout)), 'r', label=f"K = {K:0.2f}")
 
 plt.legend()

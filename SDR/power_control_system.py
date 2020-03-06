@@ -86,15 +86,17 @@ n, yout = con.step_response(step_size * GCL_SetLev_Pout, T=n)
 plt.step(n, (np.squeeze(yout)), 'r', label=f"K = {K:0.2f}")
 
 plt.legend()
-plt.title("Power Control Loop Step Response")
+plt.title("Power Control Loop Step Response\n Set Level changed from 0 to 1500 bits with Pin constant")
 plt.ylabel("Power Gain [dB]")
 plt.xlabel("Sample Number")
 
 plt.figure()
 K = 0.5
 GOL_SetLev_Pout = K * GF * GFB
+# forward gain is 1 from pin to pout, feedback gain is the same as GOL (from set level to pout)
 GCL_Pin_Pout = con.feedback(1, GOL_SetLev_Pout)
-# step respoonse for when Set Level is increased from 0 to 1500
+# step respoonse for when Pin increases by 10dB with Set Level fixed, from Pin to Pout
+# control loop adjust accordingly to ensure pout is same as set level
 step_size = 10  # dB
 n, yout = con.step_response(step_size * GCL_Pin_Pout, T=n)
 
@@ -110,12 +112,12 @@ plt.step(n, (np.squeeze(yout)), label=f"K = {K:0.2f}")
 K = 0.25
 GOL_SetLev_Pout = K * GF * GFB
 GCL_Pin_Pout = con.feedback(1, GOL_SetLev_Pout)
-# step respoonse for when Set Level is increased from 0 to 1500
+# step respoonse for when Pin increases by 10dB with Set Level fixed, from Pin to Pout
 n, yout = con.step_response(step_size * GCL_Pin_Pout, T=n)
 plt.step(n, (np.squeeze(yout)), 'r', label=f"K = {K:0.2f}")
 
 plt.legend()
-plt.title("Power Control Loop Step Response")
+plt.title("Power Control Loop Step Response\n Pin changed by 10dB with Set Level fixed")
 plt.ylabel("Power Gain [dB]")
 plt.xlabel("Sample Number")
 

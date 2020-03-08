@@ -77,15 +77,15 @@ def flatten(lis):
             yield item
 
 
-amp = 1  # 1V        (Amplitude)
-f0 = 1000  # 1kHz      (Frequency)
+amp1 = 1  # 1V        (Amplitude)
+f1 = 1000  # 1kHz      (Frequency)
 Fs = 8000  # 200kHz    (Sample Rate)
-T = 1 / f0
-w0 = 2 * pi * f0
+T = 1 / f1
+w0 = 2 * pi * f1
 
 Ts = 1 / Fs
 num_sampls = Fs  # number of samples
-num_sampls = 8  # number of samples
+num_sampls = 2**3  # number of samples
 
 x_t = np.arange(0, num_sampls * Ts, Ts)
 n = x_t
@@ -102,7 +102,7 @@ continuous = False
 
 # if set True, all phasors in rotating_phasors will spin with respect to center of polar plot
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
-spin_orig_center = False
+spin_orig_center = True
 
 # pass in phasor arrays directly when True
 # this flag must be set to False if you're working with input_vector and FT_mode
@@ -118,16 +118,28 @@ max_theta = np.angle(input_vector, deg=True).min()
 
 if pass_direct_phasor_list:
     # manual phasor list
-    phi = 0
+    phi1 = 0
+    amp2 = 0.5
+    phi2 = 3 * pi / 4
+    f2 = 2e3
     rotating_phasors = [
-        # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
-        np.array(amp * 1 * np.exp(1j * (2 * pi * (f0 / 1.0) * x_t + phi))) / 2j,
-        -np.array(amp * 1 * np.exp(1j * (2 * pi * (-f0 / 1.0) * x_t + phi))) / 2j,
-        np.array(0.5 * 1 * np.exp(1j * (2 * pi * (2 * f0 / 1.0) * x_t + 3 * pi / 4))) / 2j,
-        -np.array(0.5 * 1 * np.exp(1j * (2 * pi * (-2 * f0 / 1.0) * x_t + 3 * pi / 4))) / 2j
+        # amp1 * np.exp(1j * (2 * pi * 0 * x_t + pi)),
+        # complex cosine
+        amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1))
+        # real cosine
+        # amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        # amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1))
+        # real sine 1
+        # amp1 / 2j * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        # -amp1 / 2j * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
+        # real sine 2
+        # amp2 / 2j * np.exp(1j * (2 * pi * f2 * x_t + phi2)),
+        # -amp2 / 2j * np.exp(-1j * (2 * pi * f2 * x_t + phi2))
+        # real sine in sine form, not euler's form
+        # amp2 * np.sin(2 * pi * f2 * x_t + phi2)
     ]
 
-    # rotating_phasors = [np.sin(2 * pi * f0 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)]
+    # rotating_phasors = [np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)]
 
 else:
     if FT_mode:
@@ -150,7 +162,7 @@ else:
         for k, X_curr_k in zip(freq_idx, Xk):
             rotating_phasors.append(1 / N * X_curr_k *
                                     np.array(np.exp(
-                                        1j * (2 * pi * f0 * k * n / 1))))  # 1/N term is not included, it's just speed
+                                        1j * (2 * pi * f1 * k * n / 1))))  # 1/N term is not included, it's just speed
 
     else:
         # in this mode, input vector is FIR filter coefficients h[k] or bk
@@ -210,7 +222,7 @@ class ScopeRectCmbd(object):
         self.ax_r.set_xlabel(self.xylabels[0])
         self.ax_r.set_ylabel(self.xylabels[1])
 
-        self.ax_r.set_ylim(-amp - 2, amp + 2)
+        self.ax_r.set_ylim(-amp1 - 2, amp1 + 2)
         self.ax_r.set_xlim(0, self.max_t)
 
     def update(self, emitted):
@@ -374,7 +386,7 @@ class ScopePolarCmbd(object):
             # self.ax_p.set_yticks(np.arange(min_xy, max_xy, step=round((max_xy-min_xy)/5)))
             pass
 
-        self.one_cycle_index = Fs / f0
+        self.one_cycle_index = Fs / f1
 
     def update(self, emitted):
 
@@ -579,26 +591,39 @@ ax_rect_cmbd = plt.subplot(3, 2, 2)
 
 # fft plot of the sum of signals in rotating_phasors
 sum_sig = sum(rotating_phasors)
-# sum_sig = np.sin(2 * pi * f0 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)
+sum_sig1 = np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)
 
 yf = fft(sum_sig)
 xf = fftfreq1(num_sampls, 1 / Fs)
 ax_rect_fft = plt.subplot(3, 2, 3)
 ax_rect_fft.set_xlabel('Frequency [kHz]')
 ax_rect_fft.set_ylabel('Magnitude')
-# xf = fftshift(xf)
-# yf = fftshift(yf)
-ax_rect_fft.plot(1.0 / num_sampls * np.abs(yf))
+xf = fftshift(xf)
+yf = fftshift(yf)
+
+# ax_rect_fft.stem(xf / 1e3, 1.0 / 1 * np.abs(yf), use_line_collection=True)
+
+if np.all(np.isreal(np.round(sum_sig, 3))):
+    # if input is real
+    ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)
+else:
+    # if input is complex
+    # do not need 2/N since there's already a 1/2 factor
+    # in sinx = (e^jx - e^-jx) / 2j and cox = (e^jx + e^-jx) / 2
+    # for complex sig, it's just e^jx, not e^jx / 2
+    # Ensure there's no /2 in rotating_phasors if giving complex input
+    ax_rect_fft.stem(xf / 1e3, 1.0 / num_sampls * np.abs(yf), use_line_collection=True)
+
+ax_rect_fft = plt.subplot(3, 2, 5)
+ax_rect_fft.stem(xf / 1e3, angle2(np.round(yf, 1)) * 180 / pi, use_line_collection=True)
+ax_rect_fft.set_xlabel('Frequency [kHz]')
+ax_rect_fft.set_ylabel('Phase [Deg]')
 
 # ax_mag = plt.subplot(3, 2, 4)
 ax_rect_mag = plt.subplot(3, 2, 4)
-ax_rect_phase = plt.subplot(3, 2, 5)
-
-ax_rect_fft = plt.subplot(3, 2, 6)
+ax_rect_phase = plt.subplot(3, 2, 6)
 
 # ax_rect_fft.plot(np.unwrap(np.angle(np.round(yf, 1), deg=True)))
-
-ax_rect_fft.plot(angle2(np.round(yf, 1)) * 180 / pi)
 
 abc = angle2(np.round(yf, 1))
 

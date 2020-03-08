@@ -43,6 +43,26 @@ def fftfreq1(N, d):
         return np.concatenate((a1, a2)) / (N * d)
 
 
+def angle2(x):
+    fin_res = []
+
+    for i in x:
+        imag = i.imag
+        real = i.real
+
+        if real == 0 and isinstance(real, float):
+            real = 0
+
+        if imag == 0 and isinstance(real, float):
+            imag = 0
+
+        res = np.arctan2(imag, real)
+
+        fin_res.append(res)
+
+    return np.array(fin_res)
+
+
 def wrap_around(x, count):
     return x % count
 
@@ -59,14 +79,15 @@ def flatten(lis):
 
 amp = 1  # 1V        (Amplitude)
 f0 = 1000  # 1kHz      (Frequency)
-Fs = 200000  # 200kHz    (Sample Rate)
+Fs = 8000  # 200kHz    (Sample Rate)
 T = 1 / f0
 w0 = 2 * pi * f0
 
 Ts = 1 / Fs
 num_sampls = Fs  # number of samples
+num_sampls = 8  # number of samples
 
-x_t = np.arange(0, Fs * Ts, Ts)
+x_t = np.arange(0, num_sampls * Ts, Ts)
 n = x_t
 
 # list of phasor arrays that get passed into animation function
@@ -85,11 +106,11 @@ spin_orig_center = False
 
 # pass in phasor arrays directly when True
 # this flag must be set to False if you're working with input_vector and FT_mode
-pass_direct_phasor_list = False
+pass_direct_phasor_list = True
 
-FT_mode = True
+FT_mode = False
 double_sided_FFT = True
-input_vector = np.array([1, 5, -2-2j])
+input_vector = np.array([1, 1, 1])
 N = len(input_vector)
 
 max_mag = np.absolute(input_vector).max()
@@ -97,12 +118,16 @@ max_theta = np.angle(input_vector, deg=True).min()
 
 if pass_direct_phasor_list:
     # manual phasor list
-    phi = pi / 2
+    phi = 0
     rotating_phasors = [
         # np.array(amp * np.exp(1j * (2 * pi * 0 * x_t + pi))),
-        np.array(amp * 1 * np.exp(1j * (2 * pi * (f0 / 1.0) * x_t + phi))),
-        np.array(amp * 1 * np.exp(1j * (2 * pi * (-f0 / 1.0) * x_t + phi)))
+        np.array(amp * 1 * np.exp(1j * (2 * pi * (f0 / 1.0) * x_t + phi))) / 2j,
+        -np.array(amp * 1 * np.exp(1j * (2 * pi * (-f0 / 1.0) * x_t + phi))) / 2j,
+        np.array(0.5 * 1 * np.exp(1j * (2 * pi * (2 * f0 / 1.0) * x_t + 3 * pi / 4))) / 2j,
+        -np.array(0.5 * 1 * np.exp(1j * (2 * pi * (-2 * f0 / 1.0) * x_t + 3 * pi / 4))) / 2j
     ]
+
+    # rotating_phasors = [np.sin(2 * pi * f0 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)]
 
 else:
     if FT_mode:
@@ -554,22 +579,32 @@ ax_rect_cmbd = plt.subplot(3, 2, 2)
 
 # fft plot of the sum of signals in rotating_phasors
 sum_sig = sum(rotating_phasors)
+# sum_sig = np.sin(2 * pi * f0 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)
+
 yf = fft(sum_sig)
-xf = fftfreq(num_sampls, 1 / Fs)
+xf = fftfreq1(num_sampls, 1 / Fs)
 ax_rect_fft = plt.subplot(3, 2, 3)
 ax_rect_fft.set_xlabel('Frequency [kHz]')
 ax_rect_fft.set_ylabel('Magnitude')
-xf = fftshift(xf)
-yf = fftshift(yf)
-ax_rect_fft.plot(xf / 1e3, 1.0 / num_sampls * np.abs(yf))
+# xf = fftshift(xf)
+# yf = fftshift(yf)
+ax_rect_fft.plot(1.0 / num_sampls * np.abs(yf))
 
 # ax_mag = plt.subplot(3, 2, 4)
 ax_rect_mag = plt.subplot(3, 2, 4)
 ax_rect_phase = plt.subplot(3, 2, 5)
 
+ax_rect_fft = plt.subplot(3, 2, 6)
+
+# ax_rect_fft.plot(np.unwrap(np.angle(np.round(yf, 1), deg=True)))
+
+ax_rect_fft.plot(angle2(np.round(yf, 1)) * 180 / pi)
+
+abc = angle2(np.round(yf, 1))
+
 scope_main = Scope(len(rotating_phasors))
 
-interval = 4
+interval = 400
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "sineEmitter" to produce data for the update func

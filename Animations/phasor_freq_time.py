@@ -77,15 +77,34 @@ def flatten(lis):
             yield item
 
 
+def coherency_calc(fin, fs, N):
+    M = np.floor(fin / fs * N)
+    if M % 2 == 0:
+        print('M is even')
+        M = M + 1  # M must be odd
+
+    if M < 1:
+        print('Cant calculate f_coherent')
+        f_coherent = fin
+    else:
+        f_coherent = M / N * fs
+
+    return f_coherent, M
+
+
+v, b = coherency_calc(1e3, 200e3, 2 ** 12)
+
 amp1 = 1  # 1V        (Amplitude)
-f1 = 1000  # 1kHz      (Frequency)
-Fs = 8000  # 200kHz    (Sample Rate)
+f1 = 1e3  # 1kHz      (Frequency)
+Fs = 200e3  # 200kHz    (Sample Rate)
 T = 1 / f1
 w0 = 2 * pi * f1
 
 Ts = 1 / Fs
-num_sampls = Fs  # number of samples
-num_sampls = 2**3  # number of samples
+# num_sampls = Fs  # number of samples
+num_sampls = 2 ** 12  # number of samples
+
+f1, _ = coherency_calc(f1, Fs, num_sampls)
 
 x_t = np.arange(0, num_sampls * Ts, Ts)
 n = x_t
@@ -122,19 +141,21 @@ if pass_direct_phasor_list:
     amp2 = 0.5
     phi2 = 3 * pi / 4
     f2 = 2e3
+    f2, _ = coherency_calc(f2, Fs, num_sampls)
+
     rotating_phasors = [
         # amp1 * np.exp(1j * (2 * pi * 0 * x_t + pi)),
         # complex cosine
-        amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1))
+        # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
         # real cosine
         # amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
-        # amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1))
+        # amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
         # real sine 1
-        # amp1 / 2j * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
-        # -amp1 / 2j * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
+        amp1 / 2j * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        -amp1 / 2j * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
         # real sine 2
-        # amp2 / 2j * np.exp(1j * (2 * pi * f2 * x_t + phi2)),
-        # -amp2 / 2j * np.exp(-1j * (2 * pi * f2 * x_t + phi2))
+        amp2 / 2j * np.exp(1j * (2 * pi * f2 * x_t + phi2)),
+        -amp2 / 2j * np.exp(-1j * (2 * pi * f2 * x_t + phi2))
         # real sine in sine form, not euler's form
         # amp2 * np.sin(2 * pi * f2 * x_t + phi2)
     ]
@@ -603,7 +624,9 @@ yf = fftshift(yf)
 
 # ax_rect_fft.stem(xf / 1e3, 1.0 / 1 * np.abs(yf), use_line_collection=True)
 
-if np.all(np.isreal(np.round(sum_sig, 3))):
+sumg_sig_10pct = sum_sig[0:round(len(sum_sig) * 0.1) + 1]
+
+if np.all(np.isreal(np.round(sumg_sig_10pct, 3))):
     # if input is real
     ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)
 else:
@@ -625,11 +648,10 @@ ax_rect_phase = plt.subplot(3, 2, 6)
 
 # ax_rect_fft.plot(np.unwrap(np.angle(np.round(yf, 1), deg=True)))
 
-abc = angle2(np.round(yf, 1))
 
 scope_main = Scope(len(rotating_phasors))
 
-interval = 400
+interval = 40
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "sineEmitter" to produce data for the update func

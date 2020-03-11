@@ -21,6 +21,8 @@ from collections.abc import Iterable
 import matplotlib.patheffects as pe
 from scipy.fftpack import fft, fftshift, fftfreq, ifft
 import math
+import custom_tools.fftplot as fftplot
+import scipy.signal as sig
 
 pi = np.pi
 
@@ -95,8 +97,8 @@ def coherency_calc(fin, fs, N):
 v, b = coherency_calc(1e3, 200e3, 2 ** 12)
 
 amp1 = 1  # 1V        (Amplitude)
-f1 = 1e3  # 1kHz      (Frequency)
-Fs = 200e3  # 200kHz    (Sample Rate)
+f1 = 10e6  # 1kHz      (Frequency)
+Fs = 200e6  # 200kHz    (Sample Rate)
 T = 1 / f1
 w0 = 2 * pi * f1
 
@@ -138,10 +140,12 @@ max_theta = np.angle(input_vector, deg=True).min()
 if pass_direct_phasor_list:
     # manual phasor list
     phi1 = 0
-    amp2 = 0.5
-    phi2 = 3 * pi / 4
-    f2 = 2e3
+    amp2 = 1
+    phi2 = 0
+    f2 = 20e6
     f2, _ = coherency_calc(f2, Fs, num_sampls)
+
+    f3, _ = coherency_calc(20e6, Fs, num_sampls)
 
     rotating_phasors = [
         # amp1 * np.exp(1j * (2 * pi * 0 * x_t + pi)),
@@ -151,13 +155,16 @@ if pass_direct_phasor_list:
         # amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
         # amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
         # real sine 1
-        amp1 / 2j * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
-        -amp1 / 2j * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
+        # amp1 / 2j * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        # -amp1 / 2j * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
         # real sine 2
-        amp2 / 2j * np.exp(1j * (2 * pi * f2 * x_t + phi2)),
-        -amp2 / 2j * np.exp(-1j * (2 * pi * f2 * x_t + phi2))
+        # amp2 / 2j * np.exp(1j * (2 * pi * f2 * x_t + phi2)),
+        # -amp2 / 2j * np.exp(-1j * (2 * pi * f2 * x_t + phi2))
         # real sine in sine form, not euler's form
         # amp2 * np.sin(2 * pi * f2 * x_t + phi2)
+        (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+        * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
+
     ]
 
     # rotating_phasors = [np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)]
@@ -614,7 +621,24 @@ ax_rect_cmbd = plt.subplot(3, 2, 2)
 sum_sig = sum(rotating_phasors)
 sum_sig1 = np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)
 
-yf = fft(sum_sig)
+# I-j*Q
+sum_sig2 = sum([(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+            * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
+            -1j*(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+            * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
+            ])
+
+# only window data, not zero padded signal:
+# win_len = input_len if n_samp > input_len else n_samp
+
+win_len = num_sampls
+beta = 12
+win = sig.kaiser(win_len, beta)
+winscale = np.sum(win)
+
+win_data = win * sum_sig2
+
+yf = fft(win_data)
 xf = fftfreq1(num_sampls, 1 / Fs)
 ax_rect_fft = plt.subplot(3, 2, 3)
 ax_rect_fft.set_xlabel('Frequency [kHz]')
@@ -645,6 +669,9 @@ ax_rect_fft.set_ylabel('Phase [Deg]')
 # ax_mag = plt.subplot(3, 2, 4)
 ax_rect_mag = plt.subplot(3, 2, 4)
 ax_rect_phase = plt.subplot(3, 2, 6)
+
+plt.figure()
+fftplot.plot_spectrum(*fftplot.winfft(sum_sig2, fs=Fs), drange=120)
 
 # ax_rect_fft.plot(np.unwrap(np.angle(np.round(yf, 1), deg=True)))
 

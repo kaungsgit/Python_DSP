@@ -94,8 +94,6 @@ def coherency_calc(fin, fs, N):
     return f_coherent, M
 
 
-v, b = coherency_calc(1e3, 200e3, 2 ** 12)
-
 amp1 = 1  # 1V        (Amplitude)
 f1 = 10e6  # 1kHz      (Frequency)
 Fs = 200e6  # 200kHz    (Sample Rate)
@@ -163,6 +161,8 @@ if pass_direct_phasor_list:
         # real sine in sine form, not euler's form
         # amp2 * np.sin(2 * pi * f2 * x_t + phi2)
         (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+        * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
+        -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
         * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
 
     ]
@@ -623,10 +623,10 @@ sum_sig1 = np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi
 
 # I-j*Q
 sum_sig2 = sum([(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-            * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
-            -1j*(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-            * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
-            ])
+                * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
+                -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+                * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
+                ])
 
 # only window data, not zero padded signal:
 # win_len = input_len if n_samp > input_len else n_samp
@@ -636,7 +636,7 @@ beta = 12
 win = sig.kaiser(win_len, beta)
 winscale = np.sum(win)
 
-win_data = win * sum_sig2
+win_data = win * sum_sig
 
 yf = fft(win_data)
 xf = fftfreq1(num_sampls, 1 / Fs)
@@ -648,8 +648,10 @@ yf = fftshift(yf)
 
 # ax_rect_fft.stem(xf / 1e3, 1.0 / 1 * np.abs(yf), use_line_collection=True)
 
+# extract the first 10% of the sig len
 sumg_sig_10pct = sum_sig[0:round(len(sum_sig) * 0.1) + 1]
 
+# fft magnitude scaling depending whehter input is real or complex
 if np.all(np.isreal(np.round(sumg_sig_10pct, 3))):
     # if input is real
     ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)

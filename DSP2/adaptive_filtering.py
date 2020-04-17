@@ -19,7 +19,7 @@ noise1 = 1 * randn(nsamps)
 
 s = np.cos(2 * np.pi * ftone * t)
 
-delayed_noise = sig.lfilter([2, 1], 1, noise)
+delayed_noise = sig.lfilter([1, 2, 3, 4], 1, noise)
 
 adc_out = s + delayed_noise
 
@@ -49,7 +49,7 @@ plt.figure()
 fftplot.plot_spectrum(*fftplot.winfft(win_data, fs=fs))
 plt.title(f'Output Spectrum - {ftone / 1e6} MHz Tone')
 
-nTaps = 2
+nTaps = 10
 w0 = np.zeros(nsamps + 1)
 w1 = np.zeros(nsamps + 1)
 
@@ -80,6 +80,7 @@ plt.subplot(5, 1, 5)
 plt.plot(np.transpose(w))
 plt.ylabel('w')
 
+mu = 0.005
 for i in range(nsamps):
 
     sum1 = 0
@@ -91,7 +92,7 @@ for i in range(nsamps):
     e[i] = d[i] - y[i]
 
     for k in range(nTaps):
-        w[k][i + 1] = w[k][i] + 2 * 0.01 * e[i] * x[i - k]
+        w[k][i + 1] = w[k][i] + 2 * mu * e[i] * x[i - k]
 
     # # one tap filter
     # y[i] = w[i] * x[i]
@@ -120,7 +121,7 @@ plt.ylabel('w')
 # plt.plot(np.transpose(w))
 for k in range(nTaps):
     # plt.legend(f'{k}')
-    plt.plot(w[k], label=f'{k}')
+    plt.plot(w[k], label=f'w{k}')
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
 # using cusomized fft module

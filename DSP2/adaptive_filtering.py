@@ -3,6 +3,7 @@ import numpy as np
 import custom_tools.fftplot as fftplot
 import scipy.signal as sig
 import scipy.fftpack as fft
+from numpy.random import randn
 
 # A/D Conversion, Sampling
 nsamps = 2 ** 12
@@ -11,16 +12,16 @@ fs = 500e6
 ftone = 10e6
 t = np.arange(nsamps) * 1 / fs
 
-# adc_out = np.cos(2 * np.pi * ftone * t)
-
 tone2 = 0
-noise = 1 * np.random.randn(nsamps)
+noise = 1 * randn(nsamps)
 
-noise1 = 1 * np.random.randn(nsamps)
-# adc_out = np.cos(2 * np.pi * ftone * t) + np.cos(2 * np.pi * tone2 * t)
+noise1 = 1 * randn(nsamps)
 
 s = np.cos(2 * np.pi * ftone * t)
-adc_out = s + noise
+
+delayed_noise = sig.lfilter([2, 1], 1, noise)
+
+adc_out = s + delayed_noise
 
 # using cusomized fft module
 x, y = fftplot.winfft(adc_out, fs=fs)
@@ -43,59 +44,88 @@ plt.figure()
 plt.plot(t, win_data)
 
 # using cusomized fft module
-x, y = fftplot.winfft(win_data, fs=fs)
+# x, y = fftplot.winfft(win_data, fs=fs)
 plt.figure()
-fftplot.plot_spectrum(x, y)
+fftplot.plot_spectrum(*fftplot.winfft(win_data, fs=fs))
 plt.title(f'Output Spectrum - {ftone / 1e6} MHz Tone')
 
-w = np.zeros(nsamps + 1)
-w[0] = 0.3
+nTaps = 2
+w0 = np.zeros(nsamps + 1)
+w1 = np.zeros(nsamps + 1)
+
+w = np.zeros([nTaps, nsamps + 1])
 d = adc_out
-x = noise1
+x = noise
 y = np.zeros(nsamps)
 e = np.zeros(nsamps)
 
 plt.figure()
 plt.subplot(5, 1, 1)
 plt.plot(t, s)
+plt.ylabel('s')
 
 plt.subplot(5, 1, 2)
 plt.plot(t, x)
+plt.ylabel('x')
 
 plt.subplot(5, 1, 3)
 plt.plot(t, d)
+plt.ylabel('d')
 
 plt.subplot(5, 1, 4)
 plt.plot(t, e)
+plt.ylabel('e')
 
 plt.subplot(5, 1, 5)
-plt.plot(w)
+plt.plot(np.transpose(w))
+plt.ylabel('w')
 
 for i in range(nsamps):
-    y[i] = w[i] * x[i]
+
+    sum1 = 0
+    for k in range(nTaps):
+        sum1 = sum1 + w[k][i] * x[i - k]
+
+    y[i] = sum1
+
     e[i] = d[i] - y[i]
-    w[i + 1] = w[i] + 0.005 * e[i] * x[i]
+
+    for k in range(nTaps):
+        w[k][i + 1] = w[k][i] + 2 * 0.01 * e[i] * x[i - k]
+
+    # # one tap filter
+    # y[i] = w[i] * x[i]
+    # e[i] = d[i] - y[i]
+    # w[i + 1] = w[i] + 0.005 * e[i] * x[i]
 
 plt.figure()
 plt.subplot(5, 1, 1)
 plt.plot(t, s)
+plt.ylabel('s')
 
 plt.subplot(5, 1, 2)
 plt.plot(t, x)
+plt.ylabel('x')
 
 plt.subplot(5, 1, 3)
 plt.plot(t, d)
+plt.ylabel('d')
 
 plt.subplot(5, 1, 4)
 plt.plot(t, e)
+plt.ylabel('e')
 
 plt.subplot(5, 1, 5)
-plt.plot(w)
+plt.ylabel('w')
+# plt.plot(np.transpose(w))
+for k in range(nTaps):
+    # plt.legend(f'{k}')
+    plt.plot(w[k], label=f'{k}')
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
 # using cusomized fft module
-x, y = fftplot.winfft(e, fs=fs)
 plt.figure()
-fftplot.plot_spectrum(x, y)
+fftplot.plot_spectrum(*fftplot.winfft(e, fs=fs))
 plt.title(f'Output Spectrum - {ftone / 1e6} MHz Tone')
 
 # example from book Digital Signal Processing (Third Edition) Fundamentals and Applications
@@ -132,5 +162,22 @@ plt.plot(e)
 
 plt.subplot(5, 1, 5)
 plt.plot(w)
+
+# autocorrelation (correlation vs delay for same function)
+
+# noise signal
+N = nsamps
+lag = np.arange(-N + 1, N)
+# noise = randn(N) + 1j * randn(N)
+
+corr = sig.correlate(noise, noise)
+sd_n = np.std(noise)
+m_n = np.mean(noise)
+
+plt.figure()
+plt.plot(lag, np.abs(corr))
+plt.xlabel("Lag [samples]")
+plt.ylabel("Real Magnitude")
+plt.title(f"AWGN Autocorrelation {N} Samples")
 
 plt.show()

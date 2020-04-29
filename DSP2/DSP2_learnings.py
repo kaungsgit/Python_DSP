@@ -84,46 +84,59 @@ plt.title('Frequency Response for 2 point moving average')
 nsamps = 2 ** 16
 # generate time vector
 fs = 1e9
-ftone = 9e6
+ftone = 40e6
 t = np.arange(nsamps) * 1 / fs
 
+tone2 = 0
 tone = np.cos(2 * np.pi * ftone * t)
+
+# only pos freq conponent to demonstrate the aliasing is different with a complex signal
+tone = 1 / 2 * np.exp(1j * 2 * np.pi * ftone * t)
+
+# adc_out = np.cos(2 * np.pi * ftone * t) + np.cos(2 * np.pi * tone2 * t)
 
 # using cusomized fft module
 x, y = fftplot.winfft(tone, fs=fs)
 plt.figure()
 fftplot.plot_spectrum(x, y)
 plt.title('Output Spectrum (Analog) - 9 MHz Tone')
-plt.axis([-500, 500, -100, 0])
+plt.axis([-200, 200, -100, 0])
 
 # The "analog" signal was simulated with a higher sampling rate of 1 GHz
 # we can therefore simulate the effects of sampling the analog signal with a
 # 100 MHz sampling clock by taking every 10th sample and filling in zeros for
 # the rest (to see the unfolded spectrum beyond the first Nyquist zone):
 
-tone_dig = np.zeros(nsamps)
+tone_dig = np.zeros(nsamps, dtype=complex)
 
 tone_dig[::10] = 10 * tone[::10]
+
+# tone_dig = adc_out[::10]
 
 x, y = fftplot.winfft(tone_dig, fs=fs)
 plt.figure()
 fftplot.plot_spectrum(x, y)
-plt.title('Output Spectrum (Digital - Unfolded) fs = 100 MHz 9 MHz tone')
-plt.axis([-500, 500, -100, 0])
+plt.title('Output Spectrum (Digital - Unfolded) fs = 100 MHz 9 MHz adc_out')
+plt.axis([-200, 200, -100, 0])
+
+# # plot time domain waveform
+# plt.figure()
+# plt.axis([0, 3 * 1 / ftone, -1, 1])
+# plt.plot(t, adc_out, 'ro', t, tone_dig / 10, 'b.')
 
 # Undersampling
 # Consider the same with a input signal at 109 MHz:
 # generate time vector
 
 ftone2 = 109e6
-t = np.arange(nsamps) * 1/fs
+t = np.arange(nsamps) * 1 / fs
 
-tone2 = np.cos(2*np.pi*ftone2*t)
+tone2 = np.cos(2 * np.pi * ftone2 * t)
 
 # using cusomized fft module
-x,y = fftplot.winfft(tone2, fs = fs)
+x, y = fftplot.winfft(tone2, fs=fs)
 plt.figure()
-fftplot.plot_spectrum(x,y);
+fftplot.plot_spectrum(x, y);
 plt.title('Output Spectrum (Analog) - 109 MHz Tone')
 plt.axis([-500, 500, -100, 0])
 
@@ -131,12 +144,12 @@ plt.axis([-500, 500, -100, 0])
 # as the 9 MHz signal
 tone_dig2 = np.zeros(nsamps)
 
-tone_dig2[::10] = 10*tone2[::10]
+tone_dig2[::10] = 10 * tone2[::10]
 
-x,y = fftplot.winfft(tone_dig2, fs = fs)
+x, y = fftplot.winfft(tone_dig2, fs=fs)
 plt.figure()
-fftplot.plot_spectrum(x,y);
-plt.title('Output Spectrum (Digital - Unfolded) fs = 100 MHz 109 MHz tone')
+fftplot.plot_spectrum(x, y);
+plt.title('Output Spectrum (Digital - Unfolded) fs = 100 MHz 109 MHz adc_out')
 plt.axis([-500, 500, -100, 0])
 
 plt.show()

@@ -98,11 +98,11 @@ def for_loop(loop_dict_iter):
 # print(x)
 
 class GenericParams:
+    some_class_attri = 0
 
     def __init__(self, name='generic_param'):
         self.name = name
         self.value = -1000
-        self.some_generic_var = 0
 
     def set_param(self, key=None, value=None):
         print(f'Setting {key} to {value}...')
@@ -115,9 +115,11 @@ class Temp(GenericParams):
         print(f'Setting {key} to {value}...')
         self.value = value
         if value == -10:
-            self.some_generic_var = 13
+            GenericParams.some_class_attri = 13
         else:
-            self.some_generic_var = 0
+            GenericParams.some_class_attri = 0
+
+        print('end of set_param')
 
 
 class Fadc(GenericParams):
@@ -125,7 +127,7 @@ class Fadc(GenericParams):
     def set_param(self, key=None, value=None):
         print(f'Setting {key} to {value}...')
         self.value = value
-        if self.some_generic_var == 13:
+        if GenericParams.some_class_attri == 13:
             print('doing some extra stuff')
 
 
@@ -135,6 +137,41 @@ class Fin(GenericParams):
         print(f'Setting {key} to {value}...')
         self.value = value
 
+
+# temp1 = Temp('temp1')
+# temp1.set_param('temp', -10)
+#
+# Fadc1 = Fadc('Fadc1')
+#
+# Fadc1.set_param('fadc', 1500)
+
+''' **************** child class changing parent's class attribute that also affects other child classes ************'''
+
+
+class Foo(object):
+    data = "abc"
+
+
+class Bar(Foo):
+    Foo.data += "def"
+
+
+class Bar1(Foo):
+    def print_data(self):
+        print(Foo.data)
+
+
+b = Bar()
+b.data
+
+c = Bar1()
+c.data
+''' **************** child class changing parent's class attribute that also affects other child classes ************'''
+
+''' This is going to be the backbone of my generic_sweep.py.
+    To add more sweep params, add more subclasses to GenericParam and modify the set_param method for how this specific 
+    param needs to be set.
+    '''
 
 loop_param = OrderedDict()
 loop_param['Temp'] = [-10, 15]

@@ -7,26 +7,24 @@ a = dict()
 a['VGS_n_val'] = '?'
 a['VDS_n_val'] = 2.5
 a['ID_n_val'] = 20e-6
+a['W_n'] = 380
+a['L_n'] = 10
 
-# Baker parameters
-Kp_n = 120e-6
-W_n = 10
-L_n = 2
-VTH_n = 0.8
-lmda_n = 0.01
+# # Baker parameters
+# Kp_n = 120e-6
+# VTH_n = 0.8
+# lmda_n = 0.01
 
-# # McNeill parameters
-# Kp_n = 7e-6
-# W_n = 350
-# L_n = 10
-# VTH_n = 1.5
-# lmda_n = 0.03
+# McNeill parameters
+Kp_n = 26e-6
+VTH_n = 1.9
+lmda_n = 0.05
 
-ID_n, VGS_n, VDS_n = sp.symbols('ID_n, VGS_n, VDS_n')
+ID_n, VGS_n, VDS_n, W_n, L_n = sp.symbols('ID_n, VGS_n, VDS_n, W_n, L_n')
 
 h = Kp_n / 2 * W_n / L_n * (VGS_n - VTH_n) ** 2 * (1 + lmda_n * VDS_n) - ID_n
 
-x = [(ID_n, a['ID_n_val']), (VGS_n, a['VGS_n_val']), (VDS_n, a['VDS_n_val'])]
+x = [(ID_n, a['ID_n_val']), (VGS_n, a['VGS_n_val']), (VDS_n, a['VDS_n_val']), (W_n, a['W_n']), (L_n, a['L_n'])]
 
 for i in x:
     sym, val = i
@@ -52,26 +50,25 @@ a = dict()
 a['VGS_p_val'] = '?'
 a['VDS_p_val'] = 2.5
 a['ID_p_val'] = 20e-6
+a['W_p'] = 900
+a['L_p'] = 10
 
-# Baker parameters
-Kp_p = 40e-6
-W_p = 30
-L_p = 2
-VTH_p = -0.9
-lmda_p = 0.0125
 
-# # McNeill parameters
-# Kp_p = 2.5e-6
-# W_p = 900
-# L_p = 10
-# VTH_p = -1.5
-# lmda_p = 0.05
+# # Baker parameters
+# Kp_p = 40e-6
+# VTH_p = -0.9
+# lmda_p = 0.0125
 
-ID_p, VGS_p, VDS_p = sp.symbols('ID_p, VGS_p, VDS_p')
+# McNeill parameters
+Kp_p = 9.1e-6
+VTH_p = -1.6
+lmda_p = 0.028
+
+ID_p, VGS_p, VDS_p, W_p, L_p = sp.symbols('ID_p, VGS_p, VDS_p, W_p, L_p')
 
 h = Kp_p / 2 * W_p / L_p * (VGS_p - VTH_p) ** 2 * (1 + lmda_p * VDS_p) - ID_p
 
-x = [(ID_p, a['ID_p_val']), (VGS_p, a['VGS_p_val']), (VDS_p, a['VDS_p_val'])]
+x = [(ID_p, a['ID_p_val']), (VGS_p, a['VGS_p_val']), (VDS_p, a['VDS_p_val']), (W_p, a['W_p']), (L_p, a['L_p'])]
 
 for i in x:
     sym, val = i

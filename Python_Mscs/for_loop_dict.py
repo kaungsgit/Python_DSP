@@ -97,46 +97,6 @@ def for_loop(loop_dict_iter):
 # x = next(mylist, "orange")
 # print(x)
 
-class GenericParams:
-    some_class_attri = 0
-
-    def __init__(self, name='generic_param'):
-        self.name = name
-        self.value = -1000
-
-    def set_param(self, key=None, value=None):
-        print(f'Setting {key} to {value}...')
-        self.value = value
-
-
-class Temp(GenericParams):
-
-    def set_param(self, key=None, value=None):
-        print(f'Setting {key} to {value}...')
-        self.value = value
-        if value == -10:
-            GenericParams.some_class_attri = 13
-        else:
-            GenericParams.some_class_attri = 0
-
-        print('end of set_param')
-
-
-class Fadc(GenericParams):
-
-    def set_param(self, key=None, value=None):
-        print(f'Setting {key} to {value}...')
-        self.value = value
-        if GenericParams.some_class_attri == 13:
-            print('doing some extra stuff')
-
-
-class Fin(GenericParams):
-
-    def set_param(self, key=None, value=None):
-        print(f'Setting {key} to {value}...')
-        self.value = value
-
 
 # temp1 = Temp('temp1')
 # temp1.set_param('temp', -10)
@@ -168,11 +128,60 @@ c = Bar1()
 c.data
 ''' **************** child class changing parent's class attribute that also affects other child classes ************'''
 
-''' This is going to be the backbone of my generic_sweep.py.
-    To add more sweep params, add more subclasses to GenericParam and modify the set_param method for how this specific 
-    param needs to be set.
+''' This is going to be the backbone of my generic_sweep.py. No more growing nested for loops when new param is added!
+    To add more sweep params, add more subclasses to GenericParam and modify the set_param method for how this 
+    specifically param needs to be set.
     '''
 
+
+class GenericParams:
+    class_attri_1 = 0
+    class_attri_2 = 0
+
+    def __init__(self, name='generic_param'):
+        self.name = name
+        self.value = -1000
+
+    def set_param(self, key=None, value=None):
+        print(f'Setting {key} to {value}...')
+        self.value = value
+
+
+class Temp(GenericParams):
+
+    def set_param(self, key=None, value=None):
+        print(f'Setting {key} to {value}...')
+        self.value = value
+        if value == -10:
+            # set some class attribute that other child class will use in its set_param method
+            GenericParams.class_attri_2 = 13
+            print('Class attri 2 is changed in setting Temp')
+        else:
+            GenericParams.class_attri_2 = 0
+
+        print('end of set_param')
+
+
+class Fadc(GenericParams):
+
+    def set_param(self, key=None, value=None):
+        print(f'Setting {key} to {value}...')
+        self.value = value
+        if GenericParams.class_attri_2 == 13:
+            print('doing some extra stuff in setting Fadc')
+
+
+class Fin(GenericParams):
+
+    def set_param(self, key=None, value=None):
+        print(f'Setting {key} to {value}...')
+        self.value = value
+        if GenericParams.class_attri_1 == 27:
+            print('doing some extra stuff in setting Fin')
+
+
+# add more loop params here
+# the loop param objects created must have the same name as the key entered here
 loop_param = OrderedDict()
 loop_param['Temp'] = [-10, 15]
 loop_param['Fadc'] = [4000, 6000]
@@ -180,6 +189,9 @@ loop_param['Fin'] = [4500, 2234]
 
 keys, values = zip(*loop_param.items())
 iterations = [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+# set some parent class attribute that one or more child class will need in their set_param method
+GenericParams.class_attri_1 = 27
 
 for i in iterations:
     print(i)
@@ -189,7 +201,9 @@ for i in iterations:
 
         # print(f'temp is {i["Temp"]}')
 
+        # create the class name from param_key
         curr_param_class = globals()[param_key]
+        # create class instance from param_key
         curr_param_class_instance = curr_param_class(name=param_key)
 
         curr_param_class_instance.set_param(param_key, param_value)

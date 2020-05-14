@@ -3,22 +3,23 @@ import sympy as sp
 from engineering_notation import EngNumber as en
 
 ''' ************************************ calculate NMOS ID, VGS, or VDS ************************************'''
+
+# # Baker parameters
+Kp_n = 120e-6
+VTH_n = 0.8
+lmda_n = 0.01
+
+# # McNeill parameters
+# Kp_n = 26e-6
+# VTH_n = 1.9
+# lmda_n = 0.05
+
 a = dict()
 a['VGS_n_val'] = '?'
 a['VDS_n_val'] = 2.5
-a['ID_n_val'] = 20e-6
-a['W_n'] = 380
-a['L_n'] = 10
-
-# # Baker parameters
-# Kp_n = 120e-6
-# VTH_n = 0.8
-# lmda_n = 0.01
-
-# McNeill parameters
-Kp_n = 26e-6
-VTH_n = 1.9
-lmda_n = 0.05
+a['ID_n_val'] = 40e-6
+a['W_n'] = 10
+a['L_n'] = 2
 
 ID_n, VGS_n, VDS_n, W_n, L_n = sp.symbols('ID_n, VGS_n, VDS_n, W_n, L_n')
 
@@ -46,13 +47,6 @@ gm_n = 2 * a['ID_n_val'] / (a['VGS_n_val'] - VTH_n)
 print(f'gm is {en(gm_n)}\n')
 
 ''' ************************************ calculate PMOS ID, VGS, or VDS ************************************'''
-a = dict()
-a['VGS_p_val'] = '?'
-a['VDS_p_val'] = 2.5
-a['ID_p_val'] = 20e-6
-a['W_p'] = 900
-a['L_p'] = 10
-
 
 # # Baker parameters
 # Kp_p = 40e-6
@@ -63,6 +57,13 @@ a['L_p'] = 10
 Kp_p = 9.1e-6
 VTH_p = -1.6
 lmda_p = 0.028
+
+a = dict()
+a['VGS_p_val'] = '?'
+a['VDS_p_val'] = 2.5
+a['ID_p_val'] = 20e-6
+a['W_p'] = 900
+a['L_p'] = 10
 
 ID_p, VGS_p, VDS_p, W_p, L_p = sp.symbols('ID_p, VGS_p, VDS_p, W_p, L_p')
 

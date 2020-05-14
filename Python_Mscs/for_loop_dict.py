@@ -135,29 +135,30 @@ c.data
 
 
 class GenericParams:
-    class_attri_1 = 0
-    class_attri_2 = 0
+    shared_vars = dict()
+    curr_params = dict()
 
     def __init__(self, name='generic_param'):
-        self.name = name
+        self.key = name
         self.value = -1000
 
     def set_param(self, key=None, value=None):
         print(f'Setting {key} to {value}...')
         self.value = value
+        self.curr_params[key] = value
 
 
 class Temp(GenericParams):
 
     def set_param(self, key=None, value=None):
-        print(f'Setting {key} to {value}...')
-        self.value = value
+        super().set_param(key, value)
         if value == -10:
             # set some class attribute that other child class will use in its set_param method
-            GenericParams.class_attri_2 = 13
+            GenericParams.shared_vars['brd'] = 10
+            GenericParams.shared_vars['brd5'] = 1010
             print('Class attri 2 is changed in setting Temp')
         else:
-            GenericParams.class_attri_2 = 0
+            GenericParams.shared_vars['brd'] = -1
 
         print('end of set_param')
 
@@ -165,18 +166,16 @@ class Temp(GenericParams):
 class Fadc(GenericParams):
 
     def set_param(self, key=None, value=None):
-        print(f'Setting {key} to {value}...')
-        self.value = value
-        if GenericParams.class_attri_2 == 13:
+        super().set_param(key, value)
+        if GenericParams.shared_vars['brd1'] == 10:
             print('doing some extra stuff in setting Fadc')
 
 
 class Fin(GenericParams):
 
     def set_param(self, key=None, value=None):
-        print(f'Setting {key} to {value}...')
-        self.value = value
-        if GenericParams.class_attri_1 == 27:
+        super().set_param(key, value)
+        if GenericParams.shared_vars['brd5'] == 1010:
             print('doing some extra stuff in setting Fin')
 
 
@@ -191,7 +190,10 @@ keys, values = zip(*loop_param.items())
 iterations = [dict(zip(keys, v)) for v in itertools.product(*values)]
 
 # set some parent class attribute that one or more child class will need in their set_param method
-GenericParams.class_attri_1 = 27
+
+GenericParams.shared_vars['brd'] = 1
+GenericParams.shared_vars['brd1'] = 2
+GenericParams.shared_vars['brd2'] = 3
 
 for i in iterations:
     print(i)

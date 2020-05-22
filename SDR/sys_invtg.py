@@ -32,18 +32,28 @@ s = con.tf('s')
 sys_und_tst = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
 
 R1 = 9e6
-C1 = 100e-12
+C1 = 12.2e-12
 
 R2 = 1e6
 C2 = 110e-12
 
+C3 = 50e-12
+
 Z1 = R1 / (1 + s * R1 * C1)
 
-Z2 = R2 / (1 + s * R2 * C2)
+# Z2 = R2 / (1 + s * R2 * C2)
+
+Z2 = 1 / (s * C3) * (R2 + 1 / (s * C2)) / (1 / (s * C3) + (R2 + 1 / (s * C2)))
 
 sys_und_tst = Z2 / (Z1 + Z2)
 
 print(sys_und_tst)
+
+sim_sys = con.minreal(sys_und_tst)
+
+print(sim_sys)
+
+sys_und_tst = sim_sys
 
 fstop_c = 10e6
 
@@ -64,11 +74,8 @@ else:
     w = 2 * np.pi * np.logspace(-3, np.log10(fstop_c), 100)
 
 mag, phase, w = con.freqresp(sys_und_tst, w)
-
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
 # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
-
-
 mag = np.squeeze(mag)
 phase = np.squeeze(phase)
 plt.figure()
@@ -115,6 +122,9 @@ plt.ylabel('Phase [Deg]')
 # pole zero plot
 poles, zeros = con.pzmap(sys_und_tst)
 plt.axis('equal')
+
+print(f'ploes are {poles}')
+print(f'zeros are {zeros}')
 
 # plt.figure()
 # plt.grid()

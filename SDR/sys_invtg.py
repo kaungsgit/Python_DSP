@@ -5,12 +5,65 @@ import sys
 import pprint as pp
 import numpy.random as random
 
+import sympy as sp
+
 sys.path.append("../")
 import custom_tools.fftplot as fftplot
 import custom_tools.handyfuncs as hf
 
 import control as con
 import control.matlab as mctrl
+
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.cm as cm
+
+
+def s_plane_plot(sfunc, limits=[3, 3, 10], nsamp=500):
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    # ax.set_yscale('log')
+    # ax.set_xscale('log')
+
+    sigma = np.linspace(-limits[0], limits[0], nsamp)
+    omega = sigma.copy()
+
+    sigma, omega = np.meshgrid(sigma, omega)
+
+    s = sigma + 1j * omega
+
+    sigma_zero = np.zeros(sigma.shape)
+
+    # ax.plot3D(sigma_zero, omega, hf.db(sfunc(s)), 'gray')
+
+    surf = ax.plot_surface(sigma, omega, hf.db(sfunc(s)), cmap=plt.cm.coolwarm)
+
+    ax.set_zlim(-30, limits[2])
+
+    plt.xlabel('$\sigma$')
+    plt.ylabel('$j\omega$')
+    fig.tight_layout()
+
+
+def s_plot_val_func(num, den, s_para):
+    num = np.squeeze(num)
+    den = np.squeeze(den)
+    n_array = []
+    num_len = num.size
+    for i in reversed(range(num_len)):
+        n_array.append(s_para ** (i))
+
+    num_sym = sum(np.multiply(num, n_array))
+
+    d_array = []
+    den_len = den.size
+    for i in reversed(range(den_len)):
+        d_array.append(s_para ** (i))
+
+    den_sym = sum(np.multiply(den, d_array))
+
+    return num_sym / den_sym
+
 
 # Handles both s and z domain
 # - z domain default Fs is 1
@@ -28,11 +81,16 @@ zm1 = 1 / z
 
 s = con.tf('s')
 
-# sys_und_tst = 1 / s
+# sys_und_tst = (s) / (1 + s)
+
 sys_und_tst = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
 
+x = sp.symbols('x')
+# x = 1
+
+
 R1 = 9e6
-C1 = 12.2e-12
+C1 = 100e-12
 
 R2 = 1e6
 C2 = 110e-12
@@ -41,11 +99,11 @@ C3 = 50e-12
 
 Z1 = R1 / (1 + s * R1 * C1)
 
-# Z2 = R2 / (1 + s * R2 * C2)
+Z2 = R2 / (1 + s * R2 * C2)
 
-Z2 = 1 / (s * C3) * (R2 + 1 / (s * C2)) / (1 / (s * C3) + (R2 + 1 / (s * C2)))
+# Z2 = 1 / (s * C3) * (R2 + 1 / (s * C2)) / (1 / (s * C3) + (R2 + 1 / (s * C2)))
 
-sys_und_tst = Z2 / (Z1 + Z2)
+# sys_und_tst = Z2 / (Z1 + Z2)
 
 print(sys_und_tst)
 
@@ -55,7 +113,15 @@ print(sim_sys)
 
 sys_und_tst = sim_sys
 
-fstop_c = 10e6
+gg = s_plot_val_func(sys_und_tst.num, sys_und_tst.den, x)
+
+# https://www.sympy.org/scipy-2017-codegen-tutorial/notebooks/22-lambdify.html
+# https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
+g = sp.lambdify([x], gg)
+
+s_plane_plot(g, limits=[3, 3, 5], nsamp=500)
+
+fstop_c = 10e3
 
 # impulse response
 t_cd, im_resp = con.impulse_response(sys_und_tst)

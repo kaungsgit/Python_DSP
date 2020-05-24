@@ -18,7 +18,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.cm as cm
 
 
-def s_plane_plot(sfunc, limits=[3, 3, 10], nsamp=500):
+def s_plane_plot(sys, sfunc, limits=[3, 3, 10], nsamp=500):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
@@ -28,12 +28,32 @@ def s_plane_plot(sfunc, limits=[3, 3, 10], nsamp=500):
     sigma = np.linspace(-limits[0], limits[0], nsamp)
     omega = sigma.copy()
 
-    omega_1 = np.linspace(-limits[0], limits[0], nsamp)
-    sigma_1 = np.zeros(sigma.size)
+    if sys.isdtime():
 
-    s_zero_sig = sigma_1 + 1j * omega_1
-    # plot 3D only takes in 1D arrays, 3 of them total
-    ax.plot3D(sigma_1, omega_1, hf.db(sfunc(s_zero_sig)), 'r')
+        # drawing z plane freq response
+        cir_phase = np.linspace(0, 2 * np.pi, nsamp)
+
+        sigma_x = np.real(np.exp(1j * cir_phase))
+        omega_y = np.imag(np.exp(1j * cir_phase))
+
+        z_zero_omega = sigma_x + 1j * omega_y
+
+        freq_resp_dB = hf.db(sfunc(z_zero_omega))
+        # plot 3D only takes in 1D arrays, 3 of them total
+        ax.plot3D(sigma_x, omega_y, freq_resp_dB, 'r')
+        plt.xlabel('Real z')
+        plt.ylabel('Imag z')
+    else:
+        omega_1 = np.linspace(-limits[0], limits[0], nsamp)
+        sigma_1 = np.zeros(sigma.size)
+
+        s_zero_sig = sigma_1 + 1j * omega_1
+
+        freq_resp_dB = hf.db(sfunc(s_zero_sig))
+        # plot 3D only takes in 1D arrays, 3 of them total
+        ax.plot3D(sigma_1, omega_1, freq_resp_dB, 'r')
+        plt.xlabel('$\sigma$')
+        plt.ylabel('$j\omega$')
 
     sigma, omega = np.meshgrid(sigma, omega)
     s = sigma + 1j * omega
@@ -44,9 +64,9 @@ def s_plane_plot(sfunc, limits=[3, 3, 10], nsamp=500):
 
     ax.set_zlim(-30, limits[2])
 
-    plt.xlabel('$\sigma$')
-    plt.ylabel('$j\omega$')
     fig.tight_layout()
+
+    return freq_resp_dB
 
 
 def s_plot_val_func(num, den, s_para):
@@ -78,36 +98,33 @@ Fs = 1 / T
 print('Sampling rate is {}Hz'.format(1 / T))
 z = con.tf('z')
 zm1 = 1 / z
-# sys_und_tst = z / (z - 1)
-# sys_und_tst = 1 / (z - 1)
-
-# sys_und_tst = 1 + z ** -1 + z ** -2
 
 s = con.tf('s')
-
-# sys_und_tst = (s) / (1 + s)
-
-# sys_und_tst = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
 
 x = sp.symbols('x')
 # x = 1
 
+# continuous
 
 R1 = 9e6
-C1 = 100e-12
-
+C1 = 12.2e-12
 R2 = 1e6
 C2 = 110e-12
-
 C3 = 50e-12
 
 Z1 = R1 / (1 + s * R1 * C1)
-
 Z2 = R2 / (1 + s * R2 * C2)
-
 # Z2 = 1 / (s * C3) * (R2 + 1 / (s * C2)) / (1 / (s * C3) + (R2 + 1 / (s * C2)))
 
+# sys_und_tst = (s) / (1000 + s)
+# sys_und_tst = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
 sys_und_tst = Z2 / (Z1 + Z2)
+
+# discrete
+
+# sys_und_tst = z / (z - 1)
+# sys_und_tst = 1 / (z - 1)
+# sys_und_tst = 1 + z ** -1 + z ** -2
 
 print(sys_und_tst)
 
@@ -123,9 +140,15 @@ gg = s_plot_val_func(sys_und_tst.num, sys_und_tst.den, x)
 # https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
 g = sp.lambdify([x], gg)
 
-s_plane_plot(g, limits=[-10e3, 10e3, 10], nsamp=500)
-
 fstop_c = 10e3
+nsamp_pos_neg = 1000
+nsamp_single = int(nsamp_pos_neg / 2)
+
+if sys_und_tst.isdtime():
+    freq_resp_dB = s_plane_plot(sys_und_tst, g, limits=[-2, 2, 10], nsamp=nsamp_pos_neg)
+else:
+    freq_resp_dB = s_plane_plot(sys_und_tst, g, limits=[-fstop_c * 2 * np.pi, fstop_c * 2 * np.pi, 10],
+                                nsamp=nsamp_pos_neg)
 
 # impulse response
 t_cd, im_resp = con.impulse_response(sys_und_tst)
@@ -139,9 +162,9 @@ plt.grid()
 
 # plot frequency response log scale
 if sys_und_tst.isdtime():
-    w = 2 * np.pi * np.logspace(-3, np.log10(0.5), 100)
+    w = 2 * np.pi * np.logspace(-3, np.log10(0.5), nsamp_single)
 else:
-    w = 2 * np.pi * np.logspace(-3, np.log10(fstop_c), 100)
+    w = 2 * np.pi * np.logspace(-3, np.log10(fstop_c), nsamp_single)
 
 mag, phase, w = con.freqresp(sys_und_tst, w)
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
@@ -166,9 +189,9 @@ plt.ylabel('Phase [Deg]')
 # beware the difference between linspace and logspace and that we're using only 100 points total
 # phase plot in linear scale with 100pts will be off from logscale
 if sys_und_tst.isdtime():
-    w = 2 * np.pi * np.linspace(0, 0.5, 100)
+    w = 2 * np.pi * np.linspace(0, 0.5, nsamp_single)
 else:
-    w = 2 * np.pi * np.linspace(0, fstop_c, 100)
+    w = 2 * np.pi * np.linspace(0, fstop_c, nsamp_single)
 
 mag, phase, w = con.freqresp(sys_und_tst, w)
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
@@ -189,6 +212,17 @@ plt.grid()
 plt.xlabel('Frequency [Hz]')
 plt.ylabel('Phase [Deg]')
 
+plt.figure()
+if sys_und_tst.isdtime():
+    plt.plot(w / (2 * np.pi), np.flip(freq_resp_dB[int(freq_resp_dB.size / 2):]), label='Freq response from z-plane')
+else:
+    plt.plot(w / (2 * np.pi), freq_resp_dB[int(freq_resp_dB.size / 2):], label='Freq response from s-plane')
+plt.plot(w / (2 * np.pi), hf.db(mag), 'r--', label='Freq response from con.freqresp')
+plt.xlabel('Frequency [Hz]')
+plt.ylabel('Mag [dB]')
+plt.title('Comparing freq response from s/z plane to con.freqresp')
+plt.legend()
+
 # pole zero plot
 poles, zeros = con.pzmap(sys_und_tst)
 plt.axis('equal')
@@ -205,7 +239,7 @@ print(f'zeros are {zeros}')
 #     plt.plot(zeros.real, zeros.imag, 'bo')
 
 if sys_und_tst.isdtime():
-    cir_phase = np.linspace(0, 2 * np.pi, 500)
+    cir_phase = np.linspace(0, 2 * np.pi, nsamp_single)
     plt.plot(np.real(np.exp(1j * cir_phase)), np.imag(np.exp(1j * cir_phase)), 'r--')
 
 plt.show()

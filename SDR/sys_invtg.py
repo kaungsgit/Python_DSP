@@ -28,15 +28,19 @@ def s_plane_plot(sfunc, limits=[3, 3, 10], nsamp=500):
     sigma = np.linspace(-limits[0], limits[0], nsamp)
     omega = sigma.copy()
 
+    omega_1 = np.linspace(-limits[0], limits[0], nsamp)
+    sigma_1 = np.zeros(sigma.size)
+
+    s_zero_sig = sigma_1 + 1j * omega_1
+    # plot 3D only takes in 1D arrays, 3 of them total
+    ax.plot3D(sigma_1, omega_1, hf.db(sfunc(s_zero_sig)), 'r')
+
     sigma, omega = np.meshgrid(sigma, omega)
-
     s = sigma + 1j * omega
-
-    sigma_zero = np.zeros(sigma.shape)
-
-    # ax.plot3D(sigma_zero, omega, hf.db(sfunc(s)), 'gray')
-
+    # surface plot takes in 2D arrays, 3 of them total
     surf = ax.plot_surface(sigma, omega, hf.db(sfunc(s)), cmap=plt.cm.coolwarm)
+
+    # cset = ax.contour(sigma, omega, hf.db(sfunc(s)), zdir='x')
 
     ax.set_zlim(-30, limits[2])
 
@@ -83,7 +87,7 @@ s = con.tf('s')
 
 # sys_und_tst = (s) / (1 + s)
 
-sys_und_tst = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
+# sys_und_tst = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
 
 x = sp.symbols('x')
 # x = 1
@@ -103,7 +107,7 @@ Z2 = R2 / (1 + s * R2 * C2)
 
 # Z2 = 1 / (s * C3) * (R2 + 1 / (s * C2)) / (1 / (s * C3) + (R2 + 1 / (s * C2)))
 
-# sys_und_tst = Z2 / (Z1 + Z2)
+sys_und_tst = Z2 / (Z1 + Z2)
 
 print(sys_und_tst)
 
@@ -119,7 +123,7 @@ gg = s_plot_val_func(sys_und_tst.num, sys_und_tst.den, x)
 # https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
 g = sp.lambdify([x], gg)
 
-s_plane_plot(g, limits=[3, 3, 5], nsamp=500)
+s_plane_plot(g, limits=[-10e3, 10e3, 10], nsamp=500)
 
 fstop_c = 10e3
 

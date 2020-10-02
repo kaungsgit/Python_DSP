@@ -94,7 +94,16 @@ def coherency_calc(fin, fs, N):
     return f_coherent, M
 
 
-v, b = coherency_calc(1e3, 200e3, 2 ** 12)
+def returnSciNotation(x):
+    x = format(x, 'e')
+    num, pow10 = x.split('e')
+
+    num = float(num)
+
+    pow10 = float(pow10)
+
+    return num, pow10
+
 
 amp1 = 1  # 1V        (Amplitude)
 f1 = 10e6  # 1kHz      (Frequency)
@@ -103,10 +112,13 @@ T = 1 / f1
 w0 = 2 * pi * f1
 
 Ts = 1 / Fs
+
+Ts_sci, Ts_pow10 = returnSciNotation(Ts)
+
 # num_sampls = Fs  # number of samples
 num_sampls = 2 ** 12  # number of samples
 
-f1, _ = coherency_calc(f1, Fs, num_sampls)
+# f1, _ = coherency_calc(f1, Fs, num_sampls)
 
 x_t = np.arange(0, num_sampls * Ts, Ts)
 n = x_t
@@ -123,7 +135,7 @@ continuous = False
 
 # if set True, all phasors in rotating_phasors will spin with respect to center of polar plot
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
-spin_orig_center = True
+spin_orig_center = False
 
 # pass in phasor arrays directly when True
 # this flag must be set to False if you're working with input_vector and FT_mode
@@ -131,38 +143,56 @@ pass_direct_phasor_list = True
 
 FT_mode = False
 double_sided_FFT = True
-input_vector = np.array([1, 1, 1])
+
+# this data is from noise cancellation filter
+input_vector = np.array([0.13083826, 0.12517881, 0.11899678, 0.11231907, 0.10508106,
+                         0.09738001, 0.08925131, 0.08073239, 0.07186244, 0.06268219,
+                         0.05323363, 0.04355975, 0.03370433, 0.02371163, 0.01362624,
+                         0.00349278, -0.00664429, -0.01674086, -0.0267534, -0.03663912])
+
+# input_vector = np.array([0, 0, 0, 1])
 N = len(input_vector)
 
 max_mag = np.absolute(input_vector).max()
 max_theta = np.angle(input_vector, deg=True).min()
 
+phi1 = 0
+amp2 = 1
+phi2 = 0
+f2 = 20e6
+f2, _ = coherency_calc(f2, Fs, num_sampls)
+
+f3, _ = coherency_calc(20e6, Fs, num_sampls)
 if pass_direct_phasor_list:
     # manual phasor list
-    phi1 = 0
-    amp2 = 1
-    phi2 = 0
-    f2 = 20e6
-    f2, _ = coherency_calc(f2, Fs, num_sampls)
-
-    f3, _ = coherency_calc(20e6, Fs, num_sampls)
 
     rotating_phasors = [
-        # amp1 * np.exp(1j * (2 * pi * 0 * x_t + pi)),
+        # Rick Lyon DFT Example, fs = 8kHz
+        # np.sin(2 * pi * f1 * x_t),
+        # 0.5 * np.sin(2 * pi * f1 * 2 * x_t + 3 * pi / 4),
+
         # complex cosine
         # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+
         # real cosine
         # amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
         # amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
+
         # real sine 1
         # amp1 / 2j * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
         # -amp1 / 2j * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
+
         # real sine 2
         # amp2 / 2j * np.exp(1j * (2 * pi * f2 * x_t + phi2)),
         # -amp2 / 2j * np.exp(-1j * (2 * pi * f2 * x_t + phi2))
+
         # real sine in sine form, not euler's form
         # amp2 * np.sin(2 * pi * f2 * x_t + phi2)
+
+        # I-jQ (complex down conversion eg)
         (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+        * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
+        -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
         * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
 
     ]
@@ -255,14 +285,19 @@ class ScopeRectCmbd(object):
 
     def update(self, emitted):
 
+        round_dec = 6
         # drawing the individual signals
         if not pause:
 
             x_index = emitted[-1]
 
+            print('****** emitted ', emitted)
+
             # round is crucial here since int will make 199.99 as 199. Want to remove round off errors by rounding
             # to the nearest
             x_index_wrapped = wrap_around(x_index, round(self.max_t / self.dt))
+            print('x_index ', x_index)
+            print('x wrapped ', x_index_wrapped)
 
             # strip off index since it's been saved
             emitted = emitted[:-1]
@@ -271,7 +306,7 @@ class ScopeRectCmbd(object):
             if self.t_data.size == 0:
                 last_t = 0
             else:
-                last_t = round(self.t_data[-1], 6)
+                last_t = round(self.t_data[-1], round_dec)
 
             if continuous:
                 if self.t_data.size == 0:
@@ -283,11 +318,22 @@ class ScopeRectCmbd(object):
             else:
                 # frozen frame but keeps drawing on the same frame
                 # round is necessary to insure round off errors don't impact the synced updates between rect plots
-                round_nearest_max_t = round(self.max_t - self.dt, 6)
+                round_nearest_max_t = round(self.max_t - self.dt, round_dec)
+                print('self dt is', self.dt)
+                print('last_t is ', last_t)
+                print('max_t is ', self.max_t)
+                print('round_nearest_max_t is ', round_nearest_max_t)
+
                 if last_t >= round_nearest_max_t:
+                    # print('last_t is ', last_t)
+                    # print('round_nearest_max_t is ', round_nearest_max_t)
+
                     self.t_data = np.empty(0)
                     self.y_data_cmbd = [[], []]
                     self.y_data_curr_pt = [0, 0]
+
+                    print('t_data ', self.t_data)
+                    print('y_data_cmbd_0', self.y_data_cmbd[0])
 
             if x_index_wrapped == 0:
                 # reset t_data once one cycle (2pi rotation) is completed
@@ -345,6 +391,13 @@ class ScopeRectCmbd(object):
                 # two lines will be drawn, it's real projection and imag projection
                 self.sig_lines_r_cmbd[0].set_data(self.t_data / 1, self.y_data_cmbd[0])
                 self.sig_lines_r_cmbd[1].set_data(self.t_data / 1, self.y_data_cmbd[1])
+
+                # print('t_data')
+                # print(self.t_data)
+                # print('data0')
+                # print(self.y_data_cmbd[0])
+                # print('data1')
+                # print(self.y_data_cmbd[1])
 
             # this will draw the current point of final combined output of the signals in rotating_phasors
             if len(self.legend_list) == 1:
@@ -538,8 +591,10 @@ class ScopePolarCmbd(object):
 
 class Scope:
     def __init__(self, num_sigs, max_t=1 * T, dt=Ts):
-        self.rect_time = ScopeRectCmbd(ax_rect_cmbd, num_sigs, ['Real', 'Imag'], ['Time [s]', 'Amp [V]'], max_t * 1,
-                                       dt * 1)
+        self.rect_time = ScopeRectCmbd(ax_rect_cmbd, num_sigs, ['Real', 'Imag'],
+                                       ['Time [xE{} sec]'.format(round(Ts_pow10)), 'Amp [V]'],
+                                       max_t / 10 ** Ts_pow10,
+                                       dt / 10 ** Ts_pow10)
         self.pol1 = ScopePolarCmbd(ax_polar_cmbd, num_sigs)
         self.rect_mag = ScopeRectCmbd(ax_rect_mag, num_sigs, ['Magnitude'], ['Freq', 'Amp [dB]'], max_t * w0,
                                       dt * w0)
@@ -623,10 +678,10 @@ sum_sig1 = np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi
 
 # I-j*Q
 sum_sig2 = sum([(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-            * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
-            -1j*(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-            * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
-            ])
+                * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
+                -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+                * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
+                ])
 
 # only window data, not zero padded signal:
 # win_len = input_len if n_samp > input_len else n_samp
@@ -636,9 +691,9 @@ beta = 12
 win = sig.kaiser(win_len, beta)
 winscale = np.sum(win)
 
-win_data = win * sum_sig2
+win_data = win * sum_sig
 
-yf = fft(win_data)
+yf = fft(sum_sig)
 xf = fftfreq1(num_sampls, 1 / Fs)
 ax_rect_fft = plt.subplot(3, 2, 3)
 ax_rect_fft.set_xlabel('Frequency [kHz]')
@@ -648,8 +703,10 @@ yf = fftshift(yf)
 
 # ax_rect_fft.stem(xf / 1e3, 1.0 / 1 * np.abs(yf), use_line_collection=True)
 
+# extract the first 10% of the sig len
 sumg_sig_10pct = sum_sig[0:round(len(sum_sig) * 0.1) + 1]
 
+# fft magnitude scaling depending whether input is real or complex
 if np.all(np.isreal(np.round(sumg_sig_10pct, 3))):
     # if input is real
     ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)
@@ -678,7 +735,7 @@ fftplot.plot_spectrum(*fftplot.winfft(sum_sig2, fs=Fs), drange=120)
 
 scope_main = Scope(len(rotating_phasors))
 
-interval = 40
+interval = 20
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "sineEmitter" to produce data for the update func

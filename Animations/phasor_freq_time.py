@@ -105,11 +105,7 @@ def returnSciNotation(x):
     return num, pow10
 
 
-amp1 = 1  # 1V        (Amplitude)
-f1 = 10e6  # 1kHz      (Frequency)
-Fs = 200e6  # 200kHz    (Sample Rate)
-T = 1 / f1
-w0 = 2 * pi * f1
+Fs = 80e3  # 200kHz    (Sample Rate)
 
 Ts = 1 / Fs
 
@@ -150,26 +146,37 @@ input_vector = np.array([0.13083826, 0.12517881, 0.11899678, 0.11231907, 0.10508
                          0.05323363, 0.04355975, 0.03370433, 0.02371163, 0.01362624,
                          0.00349278, -0.00664429, -0.01674086, -0.0267534, -0.03663912])
 
-# input_vector = np.array([0, 0, 0, 1])
+input_vector = np.array([1, -1])
 N = len(input_vector)
 
 max_mag = np.absolute(input_vector).max()
 max_theta = np.angle(input_vector, deg=True).min()
 
+amp1 = 1  # 1V        (Amplitude)
+f1 = 1e3  # 1kHz      (Frequency)
 phi1 = 0
-amp2 = 1
-phi2 = 0
-f2 = 20e6
-f2, _ = coherency_calc(f2, Fs, num_sampls)
 
+amp2 = 1
+f2 = 2e3
+phi2 = 0
+
+f1, _ = coherency_calc(f1, Fs, num_sampls)
+f2, _ = coherency_calc(f2, Fs, num_sampls)
 f3, _ = coherency_calc(20e6, Fs, num_sampls)
+
+fund_period = 1 / f1
+w0 = 2 * pi * f1
+
+# for complex down conversion example, shift amount, LO_freq, needed for center of band to be centered at DC
+LO_freq, _ = coherency_calc(f2 - f1 / 2, Fs, num_sampls)
+
 if pass_direct_phasor_list:
     # manual phasor list
 
     rotating_phasors = [
-        # Rick Lyon DFT Example, fs = 8kHz
-        # np.sin(2 * pi * f1 * x_t),
-        # 0.5 * np.sin(2 * pi * f1 * 2 * x_t + 3 * pi / 4),
+        # Rick Lyon DFT Example, fs = 8kHz, f1 = 1kHz
+        np.sin(2 * pi * f1 * x_t),
+        0.5 * np.sin(2 * pi * f1 * 2 * x_t + 3 * pi / 4),
 
         # complex cosine
         # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
@@ -190,10 +197,12 @@ if pass_direct_phasor_list:
         # amp2 * np.sin(2 * pi * f2 * x_t + phi2)
 
         # I-jQ (complex down conversion eg)
-        (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-        * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
-        -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-        * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
+        # f1 and f2 signify the lower and upper freq of a bandpass signal
+        # phase plot should be clean if all frequencies are coherent
+        # (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+        # * np.cos(2 * pi * LO_freq * x_t + phi2),
+        # -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+        # * np.sin(2 * pi * LO_freq * x_t + phi2)
 
     ]
 
@@ -237,7 +246,7 @@ num_sigs = len(rotating_phasors)
 
 
 class ScopeRectCmbd(object):
-    def __init__(self, ax, num_sigs, legend_list, xylabels, max_t=2 * T, dt=Ts):
+    def __init__(self, ax, num_sigs, legend_list, xylabels, max_t=2 * fund_period, dt=Ts):
         self.ax_r = ax
         self.ax_r.grid(True)
         self.dt = dt
@@ -590,7 +599,7 @@ class ScopePolarCmbd(object):
 
 
 class Scope:
-    def __init__(self, num_sigs, max_t=1 * T, dt=Ts):
+    def __init__(self, num_sigs, max_t=1 * fund_period, dt=Ts):
         self.rect_time = ScopeRectCmbd(ax_rect_cmbd, num_sigs, ['Real', 'Imag'],
                                        ['Time [xE{} sec]'.format(round(Ts_pow10)), 'Amp [V]'],
                                        max_t / 10 ** Ts_pow10,
@@ -674,14 +683,9 @@ ax_rect_cmbd = plt.subplot(3, 2, 2)
 
 # fft plot of the sum of signals in rotating_phasors
 sum_sig = sum(rotating_phasors)
-sum_sig1 = np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)
 
-# I-j*Q
-sum_sig2 = sum([(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-                * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
-                -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-                * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
-                ])
+# some random signal
+sum_sig1 = np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)
 
 # only window data, not zero padded signal:
 # win_len = input_len if n_samp > input_len else n_samp
@@ -727,12 +731,6 @@ ax_rect_fft.set_ylabel('Phase [Deg]')
 ax_rect_mag = plt.subplot(3, 2, 4)
 ax_rect_phase = plt.subplot(3, 2, 6)
 
-plt.figure()
-fftplot.plot_spectrum(*fftplot.winfft(sum_sig2, fs=Fs), drange=120)
-
-# ax_rect_fft.plot(np.unwrap(np.angle(np.round(yf, 1), deg=True)))
-
-
 scope_main = Scope(len(rotating_phasors))
 
 interval = 20
@@ -741,5 +739,17 @@ fig.canvas.mpl_connect('key_press_event', onClick)
 # pass a generator in "sineEmitter" to produce data for the update func
 ani = animation.FuncAnimation(fig, scope_main.update, sig_emitter, interval=interval,
                               blit=True)
+
+plt.figure()
+# I-j*Q
+# complex down conversion example, just FFT plotting
+sum_sig2 = sum([(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+                * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
+                -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+                * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
+                ])
+fftplot.plot_spectrum(*fftplot.winfft(sum_sig2, fs=Fs), drange=120)
+plt.title('Complex Down Conversion Example')
+# ax_rect_fft.plot(np.unwrap(np.angle(np.round(yf, 1), deg=True)))
 
 plt.show()

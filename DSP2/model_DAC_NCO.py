@@ -65,6 +65,68 @@ def ds_gen(input_values, input_size):
         yield out
 
 
+def three_tap_moving_avg_list(input_values, input_size, coeffs=[1, 1, 1]):
+    input_len = len(input_values)
+
+    # initialization
+    x = 0
+    x1d = 0
+
+    out_array = np.zeros(input_len)
+
+    # # two tap FIR filter model
+    # https://drive.google.com/file/d/1nyc_faIAnee3s5ZTRZZea4H2sNmLw-o-/view?usp=sharing
+    # a = 0
+    # b = 0
+    # c = 0
+    # d = 0
+    # e = 0
+    #
+    # for count, input_ in enumerate(input_values):
+    #     input_ = int(input_)
+    #
+    #     # synchronous operations - what happens on a risng clock edge?
+    #     b = a
+    #     # asynchronous operations - what happens in between clock edges?
+    #     a = input_
+    #     c = coeffs[0] * a
+    #     e = coeffs[1] * b
+    #     d = c + e
+    #     out = d
+    #
+    #     out_array[count] = out
+
+    # three tap FIR filter
+    # https://drive.google.com/file/d/1wZlcKHbF2qm7BggPAS0U6PTVm6uJTwfV/view?usp=sharing
+    # create output by iterating through input_values
+    for count, input_ in enumerate(input_values):
+        input_ = int(input_)
+
+        # # synchronous operations - what happens on a risng clock edge?
+        # b = a
+        # # asynchronous operations - what happens in between clock edges?
+        # a = input_
+        # c = coeffs[0] * a
+        # e = coeffs[1] * b
+        # d = c + e
+        # out = d
+
+        # compute next state (clock update)
+        # always assign the output first in a flip flop chain to mimic intermediate values propagating through
+        x2d = x1d
+        x1d = x
+
+        # asynchronous operations
+        x = input_
+        yp = coeffs[0] * x + coeffs[1] * x1d
+        out = yp + coeffs[2] * x2d
+
+        out_array[count] = out
+        # end for
+
+    return out_array
+
+
 # this will supress warnings from the current signal libraries about FutureWarning and non-tuple sequences
 # (These warning are currently on the bug list and should be resolved in the next scipy.signal update)
 # import warnings
@@ -90,7 +152,7 @@ plt.plot(out)
 plt.title('DAC Output')
 
 # Simple Moving Average low pass filter
-ntaps = 1000
+ntaps = 3
 coeffs = np.ones(ntaps)
 filt_out = sig.lfilter(coeffs, ntaps, out)
 plt.plot(filt_out)
@@ -100,7 +162,7 @@ filt_out2 = sig.lfilter([1 - alpha], [1, -alpha], out)
 plt.plot(filt_out2)
 
 # frequency response of simple moving avg
-w, h = sig.freqz(coeffs, whole=True, fs=Fs)
+w, h = sig.freqz([-1, 1, 1], whole=True, fs=Fs)
 plt.figure()
 db_mag = hf.db(h)
 plt.plot((w - Fs / 2) / 1e3, fft.fftshift(db_mag), label='simple moving avg')
@@ -133,5 +195,9 @@ plt.figure()
 x, y = fftplot.winfft(filt_out2, fs=Fs, beta=12)
 fftplot.plot_spectrum(x, y)
 plt.title('Output Spectrum (Filtered Exp Mov Avg)')
+
+plt.figure()
+filt_model_out = three_tap_moving_avg_list([2, 3, 4, 0, 0, 0, 0, 0], 12, coeffs=[1, 1, 1])
+plt.plot(filt_model_out)
 
 plt.show()

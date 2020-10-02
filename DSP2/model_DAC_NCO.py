@@ -1,0 +1,137 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.signal as sig
+import custom_tools.fftplot as fftplot
+import custom_tools.handyfuncs as hf
+import scipy.fftpack as fft
+
+
+def ds_list(input_values, input_size):
+    input_len = len(input_values)
+
+    # initialization
+    sum1 = 0
+    sum2 = 0
+    out_array = np.zeros(input_len)
+
+    # create output by iterating through input_values
+    for count, input_ in enumerate(input_values):
+        input_ = int(input_)
+
+        # compute next state (clock update)
+        sum1d = sum1
+        sum2d = sum2
+
+        # asynchronous operations
+        out = -1 if sum2d < 0 else 1  # np.sign() returns 0 if 0
+        fb = 2 ** (input_size - 1) * out
+        fbx2 = 2 * fb
+        delta1 = input_ - fb
+        delta2 = sum1d - fbx2
+
+        sum1 = sum1d + delta1
+        sum2 = sum2d + delta2
+
+        out_array[count] = out
+        # end for
+
+    return out_array
+
+
+# Same model as ds_list returning a generator iterator instead
+def ds_gen(input_values, input_size):
+    # initialization
+    sum1 = 0
+    sum2 = 0
+
+    # create output by iterating through input_values
+    for input_ in input_values:
+        input_ = int(input_)
+
+        # compute next state (clock update)
+        sum1d = sum1
+        sum2d = sum2
+
+        # asynchronous operations
+        out = -1 if sum2d < 0 else 1  # np.sign() returns 0 if 0
+        fb = 2 ** (input_size - 1) * out
+        fbx2 = 2 * fb
+        delta1 = input_ - fb
+        delta2 = sum1d - fbx2
+
+        sum1 = sum1d + delta1
+        sum2 = sum2d + delta2
+
+        yield out
+
+
+# this will supress warnings from the current signal libraries about FutureWarning and non-tuple sequences
+# (These warning are currently on the bug list and should be resolved in the next scipy.signal update)
+# import warnings
+#
+# warnings.filterwarnings('ignore')
+
+Fs = 1e6
+Ts = 1 / Fs
+num_sampls = 2 ** 16
+x_t = np.arange(0, num_sampls * Ts, Ts)
+
+f1 = 0.25e3
+# inputv = 1001 * np.cos(np.linspace(0, 4 * np.pi, 2 ** 16))
+inputv = 1001 * np.cos(2 * np.pi * f1 * x_t)
+
+plt.figure()
+plt.plot(inputv)
+plt.title('Input test signal')
+out = ds_list(inputv, input_size=12)
+
+plt.figure()
+plt.plot(out)
+plt.title('DAC Output')
+
+# Simple Moving Average low pass filter
+ntaps = 1000
+coeffs = np.ones(ntaps)
+filt_out = sig.lfilter(coeffs, ntaps, out)
+plt.plot(filt_out)
+# exponential MAF
+alpha = 0.999
+filt_out2 = sig.lfilter([1 - alpha], [1, -alpha], out)
+plt.plot(filt_out2)
+
+# frequency response of simple moving avg
+w, h = sig.freqz(coeffs, whole=True, fs=Fs)
+plt.figure()
+db_mag = hf.db(h)
+plt.plot((w - Fs / 2) / 1e3, fft.fftshift(db_mag), label='simple moving avg')
+plt.xlabel('Frequency [kHz]')
+plt.ylabel('Magnitude [dB]')
+plt.title('Filter Frequency Response')
+# both mag and phase plot
+# hf.responsePlot(w, h, 'simple moving avg frequency response')
+
+# frequency response of simple moving avg
+w, h = sig.freqz([1 - alpha], [1, -alpha], whole=True, fs=Fs)
+# plt.figure()
+db_mag = hf.db(h)
+plt.plot((w - Fs / 2) / 1e3, fft.fftshift(db_mag), label='exponential MAF')
+plt.legend()
+
+# example spectrum
+plt.figure()
+# using cusomized fft module imported earlier
+x, y = fftplot.winfft(out, fs=Fs, beta=12)
+fftplot.plot_spectrum(x, y)
+plt.title('Output Spectrum (Unfiltered)')
+
+plt.figure()
+x, y = fftplot.winfft(filt_out, fs=Fs, beta=12)
+fftplot.plot_spectrum(x, y)
+plt.title('Output Spectrum (Filtered Simp Mov Avg)')
+
+plt.figure()
+x, y = fftplot.winfft(filt_out2, fs=Fs, beta=12)
+fftplot.plot_spectrum(x, y)
+plt.title('Output Spectrum (Filtered Exp Mov Avg)')
+
+plt.show()

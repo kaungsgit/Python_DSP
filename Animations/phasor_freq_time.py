@@ -135,7 +135,7 @@ continuous = False
 
 # if set True, all phasors in rotating_phasors will spin with respect to center of polar plot
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
-spin_orig_center = True
+spin_orig_center = False
 
 # pass in phasor arrays directly when True
 # this flag must be set to False if you're working with input_vector and FT_mode
@@ -143,21 +143,28 @@ pass_direct_phasor_list = True
 
 FT_mode = False
 double_sided_FFT = True
-input_vector = np.array([1, 1, 1])
+
+# this data is from noise cancellation filter
+input_vector = np.array([0.13083826, 0.12517881, 0.11899678, 0.11231907, 0.10508106,
+                         0.09738001, 0.08925131, 0.08073239, 0.07186244, 0.06268219,
+                         0.05323363, 0.04355975, 0.03370433, 0.02371163, 0.01362624,
+                         0.00349278, -0.00664429, -0.01674086, -0.0267534, -0.03663912])
+
+# input_vector = np.array([0, 0, 0, 1])
 N = len(input_vector)
 
 max_mag = np.absolute(input_vector).max()
 max_theta = np.angle(input_vector, deg=True).min()
 
+phi1 = 0
+amp2 = 1
+phi2 = 0
+f2 = 20e6
+f2, _ = coherency_calc(f2, Fs, num_sampls)
+
+f3, _ = coherency_calc(20e6, Fs, num_sampls)
 if pass_direct_phasor_list:
     # manual phasor list
-    phi1 = 0
-    amp2 = 1
-    phi2 = 0
-    f2 = 20e6
-    f2, _ = coherency_calc(f2, Fs, num_sampls)
-
-    f3, _ = coherency_calc(20e6, Fs, num_sampls)
 
     rotating_phasors = [
         # Rick Lyon DFT Example, fs = 8kHz
@@ -165,7 +172,7 @@ if pass_direct_phasor_list:
         # 0.5 * np.sin(2 * pi * f1 * 2 * x_t + 3 * pi / 4),
 
         # complex cosine
-        amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
 
         # real cosine
         # amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
@@ -183,10 +190,10 @@ if pass_direct_phasor_list:
         # amp2 * np.sin(2 * pi * f2 * x_t + phi2)
 
         # I-jQ (complex down conversion eg)
-        # (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-        # * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
-        # -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-        # * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
+        (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+        * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
+        -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
+        * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
 
     ]
 
@@ -699,7 +706,7 @@ yf = fftshift(yf)
 # extract the first 10% of the sig len
 sumg_sig_10pct = sum_sig[0:round(len(sum_sig) * 0.1) + 1]
 
-# fft magnitude scaling depending whehter input is real or complex
+# fft magnitude scaling depending whether input is real or complex
 if np.all(np.isreal(np.round(sumg_sig_10pct, 3))):
     # if input is real
     ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)

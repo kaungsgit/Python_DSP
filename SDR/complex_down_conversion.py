@@ -43,7 +43,7 @@ adc_out = np.cos(2 * np.pi * ftone * t)
 x, y = fftplot.winfft(adc_out, fs=fs)
 plt.figure()
 fftplot.plot_spectrum(x, y)
-plt.title(f'Output Spectrum - {ftone / 1e6} MHz Tone')
+plt.title(f'Output Spectrum of adc_out - {ftone / 1e6} MHz Tone')
 # plt.axis([-500, 500, -100, 0])
 
 nco_freq = 10e6
@@ -57,13 +57,13 @@ q_post_mix = adc_out * nco_sine
 x, y = fftplot.winfft(i_post_mix, fs=fs)
 plt.figure()
 fftplot.plot_spectrum(x, y)
-plt.title(f'Output Spectrum - {ftone / 1e6} MHz Tone')
+plt.title(f'Output Spectrum of i_post_mix - {ftone / 1e6} MHz Tone')
 
 # using cusomized fft module
 x, y = fftplot.winfft(q_post_mix, fs=fs)
 plt.figure()
 fftplot.plot_spectrum(x, y)
-plt.title(f'Output Spectrum - {ftone / 1e6} MHz Tone')
+plt.title(f'Output Spectrum of q_post_mix - {ftone / 1e6} MHz Tone')
 
 plt.figure()
 yf = fft.fft(adc_out)

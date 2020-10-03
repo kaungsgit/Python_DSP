@@ -127,6 +127,70 @@ def three_tap_moving_avg_list(input_values, input_size, coeffs=[1, 1, 1]):
     return out_array
 
 
+def three_tap_moving_avg_gen(input_values, input_size, coeffs=[1, 1, 1]):
+    # input_len = len(input_values)
+
+    # initialization
+    x = 0
+    x1d = 0
+
+    # out_array = np.zeros(input_len)
+
+    # # two tap FIR filter model
+    # https://drive.google.com/file/d/1nyc_faIAnee3s5ZTRZZea4H2sNmLw-o-/view?usp=sharing
+    # a = 0
+    # b = 0
+    # c = 0
+    # d = 0
+    # e = 0
+    #
+    # for count, input_ in enumerate(input_values):
+    #     input_ = int(input_)
+    #
+    #     # synchronous operations - what happens on a risng clock edge?
+    #     b = a
+    #     # asynchronous operations - what happens in between clock edges?
+    #     a = input_
+    #     c = coeffs[0] * a
+    #     e = coeffs[1] * b
+    #     d = c + e
+    #     out = d
+    #
+    #     out_array[count] = out
+
+    # three tap FIR filter
+    # https://drive.google.com/file/d/1wZlcKHbF2qm7BggPAS0U6PTVm6uJTwfV/view?usp=sharing
+    # create output by iterating through input_values
+    for count, input_ in enumerate(input_values):
+        input_ = int(input_)
+
+        # # synchronous operations - what happens on a risng clock edge?
+        # b = a
+        # # asynchronous operations - what happens in between clock edges?
+        # a = input_
+        # c = coeffs[0] * a
+        # e = coeffs[1] * b
+        # d = c + e
+        # out = d
+
+        # compute next state (clock update)
+        # always assign the output first in a flip flop chain to mimic intermediate values propagating through
+        x2d = x1d
+        x1d = x
+
+        # asynchronous operations
+        x = input_
+        yp = coeffs[0] * x + coeffs[1] * x1d
+        out = yp + coeffs[2] * x2d
+
+        # out_array[count] = out
+        # end for
+
+        yield out
+
+    # return out_array
+
+
 # simple function defintion to modify a list
 def double(in_list):
     out = []

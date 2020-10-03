@@ -127,77 +127,109 @@ def three_tap_moving_avg_list(input_values, input_size, coeffs=[1, 1, 1]):
     return out_array
 
 
-# this will supress warnings from the current signal libraries about FutureWarning and non-tuple sequences
-# (These warning are currently on the bug list and should be resolved in the next scipy.signal update)
-# import warnings
-#
-# warnings.filterwarnings('ignore')
+# simple function defintion to modify a list
+def double(in_list):
+    out = []
+    for item in in_list:
+        if item == 5:
+            print("Five detected!")
+            out.append(500)
+        else:
+            out.append(5 * item)
+    return out
 
-Fs = 1e6
-Ts = 1 / Fs
-num_sampls = 2 ** 16
-x_t = np.arange(0, num_sampls * Ts, Ts)
 
-f1 = 0.25e3
-# inputv = 1001 * np.cos(np.linspace(0, 4 * np.pi, 2 ** 16))
-inputv = 1001 * np.cos(2 * np.pi * f1 * x_t)
+# same function modified to be a generator function
+def double_gen(in_list):
+    # I added this to demonstrate how yield works
+    yield ("You just called next() for the first time!")
 
-plt.figure()
-plt.plot(inputv)
-plt.title('Input test signal')
-out = ds_list(inputv, input_size=12)
+    for item in in_list:
+        if item == 5:
+            print("Five detected!")
+            yield 500
+        else:
+            yield 5 * item
 
-plt.figure()
-plt.plot(out)
-plt.title('DAC Output')
 
-# Simple Moving Average low pass filter
-ntaps = 3
-coeffs = np.ones(ntaps)
-filt_out = sig.lfilter(coeffs, ntaps, out)
-plt.plot(filt_out)
-# exponential MAF
-alpha = 0.999
-filt_out2 = sig.lfilter([1 - alpha], [1, -alpha], out)
-plt.plot(filt_out2)
+if __name__ == '__main__':
+    Fs = 1e6
+    Ts = 1 / Fs
+    num_sampls = 2 ** 16
+    x_t = np.arange(0, num_sampls * Ts, Ts)
 
-# frequency response of simple moving avg
-w, h = sig.freqz([-1, 1, 1], whole=True, fs=Fs)
-plt.figure()
-db_mag = hf.db(h)
-plt.plot((w - Fs / 2) / 1e3, fft.fftshift(db_mag), label='simple moving avg')
-plt.xlabel('Frequency [kHz]')
-plt.ylabel('Magnitude [dB]')
-plt.title('Filter Frequency Response')
-# both mag and phase plot
-# hf.responsePlot(w, h, 'simple moving avg frequency response')
+    f1 = 0.25e3
+    # inputv = 1001 * np.cos(np.linspace(0, 4 * np.pi, 2 ** 16))
+    inputv = 1001 * np.cos(2 * np.pi * f1 * x_t)
 
-# frequency response of simple moving avg
-w, h = sig.freqz([1 - alpha], [1, -alpha], whole=True, fs=Fs)
-# plt.figure()
-db_mag = hf.db(h)
-plt.plot((w - Fs / 2) / 1e3, fft.fftshift(db_mag), label='exponential MAF')
-plt.legend()
+    plt.figure()
+    plt.plot(inputv)
+    plt.title('Input test signal')
+    out = ds_list(inputv, input_size=12)
 
-# example spectrum
-plt.figure()
-# using cusomized fft module imported earlier
-x, y = fftplot.winfft(out, fs=Fs, beta=12)
-fftplot.plot_spectrum(x, y)
-plt.title('Output Spectrum (Unfiltered)')
+    plt.figure()
+    plt.plot(out)
+    plt.title('DAC Output')
 
-plt.figure()
-x, y = fftplot.winfft(filt_out, fs=Fs, beta=12)
-fftplot.plot_spectrum(x, y)
-plt.title('Output Spectrum (Filtered Simp Mov Avg)')
+    # Simple Moving Average low pass filter
+    ntaps = 1000
+    coeffs = np.ones(ntaps)
+    filt_out = sig.lfilter(coeffs, ntaps, out)
+    plt.plot(filt_out)
+    # exponential MAF
+    alpha = 0.999
+    filt_out2 = sig.lfilter([1 - alpha], [1, -alpha], out)
+    plt.plot(filt_out2)
 
-plt.figure()
-x, y = fftplot.winfft(filt_out2, fs=Fs, beta=12)
-fftplot.plot_spectrum(x, y)
-plt.title('Output Spectrum (Filtered Exp Mov Avg)')
+    # frequency response of simple moving avg
+    w, h = sig.freqz(coeffs, whole=True, fs=Fs)
+    plt.figure()
+    db_mag = hf.db(h)
+    plt.plot((w - Fs / 2) / 1e3, fft.fftshift(db_mag), label='simple moving avg')
+    plt.xlabel('Frequency [kHz]')
+    plt.ylabel('Magnitude [dB]')
+    plt.title('Filter Frequency Response')
+    # both mag and phase plot
+    # hf.responsePlot(w, h, 'simple moving avg frequency response')
 
-plt.figure()
-filt_model_out = three_tap_moving_avg_list([2, 3, 4, 0, 0, 0, 0, 0], 12, coeffs=[1, 1, 1])
-plt.plot(filt_model_out)
+    # frequency response of simple moving avg
+    w, h = sig.freqz([1 - alpha], [1, -alpha], whole=True, fs=Fs)
+    # plt.figure()
+    db_mag = hf.db(h)
+    plt.plot((w - Fs / 2) / 1e3, fft.fftshift(db_mag), label='exponential MAF')
+    plt.legend()
 
-plt.show()
+    # example spectrum
+    plt.figure()
+    # using cusomized fft module imported earlier
+    x, y = fftplot.winfft(out, fs=Fs, beta=12)
+    fftplot.plot_spectrum(x, y)
+    plt.title('Output Spectrum (Unfiltered)')
+
+    plt.figure()
+    x, y = fftplot.winfft(filt_out, fs=Fs, beta=12)
+    fftplot.plot_spectrum(x, y)
+    plt.title('Output Spectrum (Filtered Simp Mov Avg)')
+
+    plt.figure()
+    x, y = fftplot.winfft(filt_out2, fs=Fs, beta=12)
+    fftplot.plot_spectrum(x, y)
+    plt.title('Output Spectrum (Filtered Exp Mov Avg)')
+
+    plt.figure()
+    filt_model_out = three_tap_moving_avg_list(inputv, 12, coeffs=[1, 1, 1])
+    plt.plot(filt_model_out)
+    plt.title('Filtered Input with 3 tap FIR filter Model')
+
+    plt.figure()
+    plt.subplot(121)
+    x, y = fftplot.winfft(inputv, fs=Fs, beta=12)
+    fftplot.plot_spectrum(x, y, ceil=60)
+    plt.title('Input inputv')
+
+    plt.subplot(122)
+    x, y = fftplot.winfft(filt_model_out, fs=Fs, beta=12)
+    fftplot.plot_spectrum(x, y, ceil=60)
+    plt.title('Filtered Input with 3 tap FIR filter Model')
+
+    plt.show()

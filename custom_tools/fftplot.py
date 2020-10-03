@@ -74,7 +74,7 @@ def winfft(vec, fs=1., full_scale=1., beta=12., n_samp = None):
     return faxis, fout
 
 
-def plot_spectrum(faxis, fout, drange = 150):
+def plot_spectrum(faxis, fout, drange = 150, ceil=0):
     """
     Plots frequency spectrum in dB
     
@@ -109,19 +109,19 @@ def plot_spectrum(faxis, fout, drange = 150):
 
     if (faxis[-1] >= 1000) and (faxis[-1] < 1e6):
         plt.plot(faxis/1000, 20 * _safelog(np.abs(fout)))
-        plt.axis([faxis[0]/1000, faxis[-1]/1000, -drange, 0])
+        plt.axis([faxis[0]/1000, faxis[-1]/1000, -drange, ceil])
         plt.xlabel('Frequency [KHz]')   		
     elif faxis[-1] > 1e6:
         plt.plot(faxis/1e6, 20 * _safelog(np.abs(fout)))
-        plt.axis([faxis[0]/1e6, faxis[-1]/1e6, -drange, 0])
+        plt.axis([faxis[0]/1e6, faxis[-1]/1e6, -drange, ceil])
         plt.xlabel('Frequency [MHz]')
     elif faxis[-1] > 1e9:
         plt.plot(faxis/1e9, 20 * _safelog(np.abs(fout)))
-        plt.axis([faxis[0]/1e9, faxis[-1]/1e9, -drange, 0])
+        plt.axis([faxis[0]/1e9, faxis[-1]/1e9, -drange, ceil])
         plt.xlabel('Frequency [GHz]')  
     else:
         plt.plot(faxis, 20 * _safelog(np.abs(fout)))
-        plt.axis([faxis[0], faxis[-1], -drange, 0])
+        plt.axis([faxis[0], faxis[-1], -drange, ceil])
         plt.xlabel('Frequency [Hz]')
         
     plt.ylabel('Magnitude [dBFS]')

@@ -127,7 +127,7 @@ def three_tap_moving_avg_list(input_values, input_size, coeffs=[1, 1, 1]):
     return out_array
 
 
-def three_tap_moving_avg_gen(input_values, input_size, coeffs=[1, 1, 1]):
+def three_tap_moving_avg_gen(input_values, input_size, coeffs=[1, 1, 1], offset_err=0):
     # input_len = len(input_values)
 
     # initialization
@@ -162,7 +162,7 @@ def three_tap_moving_avg_gen(input_values, input_size, coeffs=[1, 1, 1]):
     # https://drive.google.com/file/d/1wZlcKHbF2qm7BggPAS0U6PTVm6uJTwfV/view?usp=sharing
     # create output by iterating through input_values
     for count, input_ in enumerate(input_values):
-        input_ = int(input_)
+        # input_ = int(input_)
 
         # # synchronous operations - what happens on a risng clock edge?
         # b = a
@@ -181,7 +181,7 @@ def three_tap_moving_avg_gen(input_values, input_size, coeffs=[1, 1, 1]):
         # asynchronous operations
         x = input_
         yp = coeffs[0] * x + coeffs[1] * x1d
-        out = yp + coeffs[2] * x2d
+        out = yp + coeffs[2] * x2d + offset_err
 
         # out_array[count] = out
         # end for

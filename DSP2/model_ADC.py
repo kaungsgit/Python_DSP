@@ -6,71 +6,106 @@ import custom_tools.handyfuncs as hf
 import scipy.fftpack as fft
 from matplotlib.ticker import StrMethodFormatter
 
+
+def get_ytick(FS_n=0, FS_p=1, n=2):
+    if FS_n >= 0:
+
+        # Modifying ytick to be integer codes
+        ytick_list = [i for i in range(2 ** n)]
+    else:
+        ytick_list = [i for i in range(-2 ** (n - 1), 2 ** (n - 1))]
+
+    return ytick_list
+
+
+def ADC_model(input_list, FS_n=0, FS_p=1, n=2, sample_mod=1):
+    steps = 2 ** n
+    q = (FS_p - FS_n) / steps
+
+    sampled_data = 0
+
+    if FS_n >= 0:
+
+        for count, val in enumerate(input_list):
+            if count % sample_mod == 0:
+                sampled_data = (np.clip(np.round(val / q), 0, steps - 1))
+            yield sampled_data
+
+    else:
+
+        for count, val in enumerate(input_list):
+            if count % sample_mod == 0:
+                sampled_data = np.clip(np.round(val / q), -2 ** (n - 1), 2 ** (n - 1) - 1)
+            yield sampled_data
+
+
+# analog wave creation
 Fs = 10e6
 Ts = 1 / Fs
-num_sampls = 10e3
+num_sampls = 20e3
 x_t = np.arange(0, num_sampls * Ts, Ts)
 f1 = 1e3
-# inputv = 1001 * np.cos(np.linspace(0, 4 * np.pi, 2 ** 16))
 
-inputv = 5*np.cos(2 * np.pi * f1 * x_t)
+# # wrong equation, no need for (2 ** (n - 1)) * q
+# # y = np.clip((2 ** (n - 1)) * q * np.round(inputv / q), 0, steps - 1)
 
-FS_p = 5
-FS_n = -5
-n = 4
-steps = 2 ** n
-q = (FS_p - FS_n) / steps
-#
-# for i in range(steps):
-#     voltage = (i - 1) * (2) / (steps - 1)
+# formatting for binary y axis label, not really that useful, decimal is easier to read
+# format_str = '{' + 'x:0{}b'.format(n) + '}'
+# fig, ax = plt.subplots()
+# # ax.yaxis.set_major_formatter(StrMethodFormatter(format_str))
+
+''' ################################# Ramp input ######################################## '''
+FS_n = 0
+FS_p = 2
+n = 2
+
+# # ramp input for transfer function
+inputv = np.linspace(0, 2, int(num_sampls))
 
 plt.figure()
-plt.plot(x_t, inputv)
+plt.plot(x_t * 1e3, inputv)
+plt.title('Analog Waveform')
+plt.xlabel('Time [ms]')
+plt.ylabel('Voltage')
 
-fig, ax = plt.subplots()
+adc_out_gen_ramp = ADC_model(inputv, FS_n=FS_n, FS_p=FS_p, n=n, sample_mod=1)
+ytick_list = get_ytick(FS_n=FS_n, FS_p=FS_p, n=n)
 
-# inputv = np.linspace(FS_n, FS_p, 1000)
+result = np.fromiter(adc_out_gen_ramp, float)
 
-# wrong equation, no need for (2 ** (n - 1)) * q
-# y = np.clip((2 ** (n - 1)) * q * np.round(inputv / q), 0, steps - 1)
+plt.figure()
+plt.plot(inputv, result)
 
-# y = np.clip(np.round(inputv / q), -steps, steps - 1)
-
-y = np.clip(np.round(inputv / q), -2 ** (n - 1), 2 ** (n - 1) - 1)
-
-format_str = '{' + 'x:0{}b'.format(n) + '}'
-
-# ax.yaxis.set_major_formatter(StrMethodFormatter(format_str))
-
-# plt.plot(inputv, 2 ** (n - 1) * inputv)
-plt.plot(inputv, y)
-
-# ytick_list = [i for i in range(2 ** n)]
-
-ytick_list = [i for i in range(-2 ** (n - 1), 2 ** (n - 1))]
-
+plt.xlabel('Voltage')
+plt.ylabel('Code')
+plt.title('Transfer Function of ADC')
 plt.yticks(ytick_list)
 
+''' ################################# cosine input ######################################## '''
+FS_n = -5
+FS_p = 5
+n = 4
+sample_mod = 100
 
-def ADC_model(input_list):
-    sampled_data = 0
-    for count, val in enumerate(input_list):
-        if count % 2000 == 0:
-            # sampled_data = (np.clip(np.round(val / q), 0, steps - 1))
-
-            sampled_data = np.clip(np.round(val / q), -2 ** (n - 1), 2 ** (n - 1) - 1)
-
-        yield sampled_data
-
-
-adc_out_gen = ADC_model(inputv)
-
-result = np.fromiter(adc_out_gen, float)
+# cosine wave analog input
+inputv = 5 * np.cos(2 * np.pi * f1 * x_t)
 
 plt.figure()
-plt.plot(inputv, label='Original Analog Waveform')
-plt.plot(result, label='ADC Output Waveform')
-plt.legend()
-plt.title('ADC Output Waveform')
+plt.plot(x_t * 1e3, inputv)
+plt.title('Analog Waveform')
+plt.xlabel('Time [ms]')
+plt.ylabel('Voltage')
+
+adc_out_gen_cos = ADC_model(inputv, FS_n=FS_n, FS_p=FS_p, n=n, sample_mod=sample_mod)
+ytick_list = get_ytick(FS_n=FS_n, FS_p=FS_p, n=n)
+
+result = np.fromiter(adc_out_gen_cos, float)
+
+plt.figure()
+plt.plot(result)
+plt.xlabel('Sample')
+plt.ylabel('Code/Voltage')
+plt.title('ADC Output. Sampled at every {}'.format(sample_mod))
+# plt.yticks(ytick_list)
 
 plt.show()

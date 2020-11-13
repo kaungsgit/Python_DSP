@@ -48,11 +48,12 @@ class Temp(GenericParams):
         if param_changed:
             if value == -10:
                 # set some class attribute that other child class will use in its set_param method
-                swp_gbl.shr_logs['val1'] = 10
-                swp_gbl.shr_logs['val5'] = 1010
+                swp_gbl.shr_data['val1'] = 10
+                swp_gbl.shr_data['val5'] = 1010
                 # print('Class attri 2 is changed in setting Temp')
             else:
-                GenericParams.shr_data['val1'] = -1
+                swp_gbl.shr_data['val1'] = -1
+                swp_gbl.shr_data['val5'] = -5
 
         return param_changed
 
@@ -63,9 +64,11 @@ class Fadc(GenericParams):
         param_changed = super().set_param(key, value, check_if_changed)
 
         if param_changed:
-            if swp_gbl.shr_logs['val1'] == 10:
+            if swp_gbl.shr_data['val1'] == 10:
                 # print('doing some extra stuff in setting Fadc')
-                pass
+                swp_gbl.shr_logs['Fadc_readback'] = 1
+            else:
+                swp_gbl.shr_logs['Fadc_readback'] = 0
 
         return param_changed
 
@@ -86,8 +89,24 @@ class Fin(GenericParams):
         param_changed = super().set_param(key, value, check_if_changed)
 
         if param_changed:
-            if swp_gbl.shr_logs['val5'] == 1010:
+            if swp_gbl.shr_data['val5'] == 1010:
                 # print('doing some extra stuff in setting Fin')
-                pass
+                swp_gbl.shr_logs['Fin_readback'] = 1
+            else:
+                swp_gbl.shr_logs['Fin_readback'] = 0
+
+        return param_changed
+
+
+class CalibrationUsed(GenericParams):
+
+    def set_param(self, key=None, value=None, check_if_changed=True):
+        param_changed = super().set_param(key, value, check_if_changed)
+
+        if param_changed:
+            if value is True:
+                print('Calibration is On.')
+            else:
+                print('Calibration is Off.')
 
         return param_changed

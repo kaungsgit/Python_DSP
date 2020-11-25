@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 import os
 from datetime import datetime
-import globals as swp_gbl
+import global_vars as swp_gbl
 
 
 class OutputFile:
@@ -60,12 +60,25 @@ def log_data(results_file_path, swp_info, curr_params, shr_logs):
     analysis_collection = merge_dicts(swp_info, curr_params)
     analysis_collection = merge_dicts(analysis_collection, shr_logs)
 
-    # Dummy DUT measurement
-
-    if swp_gbl.curr_params['CalibrationUsed'] is True:
-        analysis_collection['SNR'] = 0.2 * np.random.randn() + 56
+    # Dummy ADC SNR measurement
+    if 'Fin' in swp_gbl.curr_params:
+        if swp_gbl.curr_params['ADCCalibrationState'] is True:
+            analysis_collection['SNR'] = 0.2 * np.random.randn() + 56
+        else:
+            analysis_collection['SNR'] = 0.2 * np.random.randn() + 54
     else:
-        analysis_collection['SNR'] = 0.2 * np.random.randn() + 54
+        # no signal in ADC spectrum case
+        if swp_gbl.curr_params['ADCCalibrationState'] is True:
+            analysis_collection['SNR'] = 0.2 * np.random.randn() + -35
+        else:
+            analysis_collection['SNR'] = 0.2 * np.random.randn() + -30
+
+    # Dummy DAC Fout measurement
+    if swp_gbl.curr_params['DACState'] is True:
+        # specAnalyzer.measureTone(swp_gbl.curr_params['DACFout'])
+        analysis_collection['DACFout Power'] = 0.2 * np.random.randn() + -7
+    else:
+        analysis_collection['DACFout Power'] = None
 
     exists = os.path.exists(results_file_path)
 

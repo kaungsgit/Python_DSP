@@ -1,112 +1,173 @@
-import globals as swp_gbl
+import global_vars as swp_gbl
 import device_startup
 
 
 class GenericParams:
-    shr_data = dict()
-    curr_params = dict()
 
     def __init__(self, name='generic_param'):
         self.key = name
         self.value = -1000
 
-    def set_param(self, key=None, value=None, check_if_changed=True):
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
 
-        if check_if_changed:
-
-            param_changed = True
+        if check_if_value_changed:
 
             if key in swp_gbl.curr_params.keys():
                 if swp_gbl.curr_params[key] == value:
-                    param_changed = False
+                    value_changed = False
                     # print('{} was already set to {}...'.format(key, value))
                 else:
                     # prev value of key is not the same as the current value
                     print('Setting {} to {}...'.format(key, value))
                     self.value = value
                     swp_gbl.curr_params[key] = value
+                    value_changed = True
             else:
                 # key is not in dict yet, create key and assign value
                 print('Setting {} to {}...'.format(key, value))
                 self.value = value
                 swp_gbl.curr_params[key] = value
+                value_changed = True
         else:
             # don't check, just set it
-            param_changed = True
+            value_changed = True
             print('Force setting {} to {}...'.format(key, value))
             self.value = value
             swp_gbl.curr_params[key] = value
 
-        return param_changed
+        return value_changed
 
 
 class Temp(GenericParams):
 
-    def set_param(self, key=None, value=None, check_if_changed=True):
-        param_changed = super().set_param(key, value, check_if_changed)
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
 
-        if param_changed:
+        if value_changed:
+            # custom set_param function starts here
+            # oven.set_temp(value)
             if value == -10:
-                # set some class attribute that other child class will use in its set_param method
+                # set some variable that other param classes will use
                 swp_gbl.shr_data['val1'] = 10
                 swp_gbl.shr_data['val5'] = 1010
-                # print('Class attri 2 is changed in setting Temp')
             else:
                 swp_gbl.shr_data['val1'] = -1
                 swp_gbl.shr_data['val5'] = -5
 
-        return param_changed
+        return value_changed
 
 
 class Fadc(GenericParams):
 
-    def set_param(self, key=None, value=None, check_if_changed=True):
-        param_changed = super().set_param(key, value, check_if_changed)
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
 
-        if param_changed:
+        if value_changed:
+            # custom set_param function starts here
             if swp_gbl.shr_data['val1'] == 10:
                 # print('doing some extra stuff in setting Fadc')
-                swp_gbl.shr_logs['Fadc_readback'] = 1
+                swp_gbl.shr_datalogs['Fadc_readback'] = 1
             else:
-                swp_gbl.shr_logs['Fadc_readback'] = 0
+                swp_gbl.shr_datalogs['Fadc_readback'] = 0
 
-        return param_changed
+        return value_changed
 
 
 class StartupCount(GenericParams):
 
-    def set_param(self, key=None, value=None, check_if_changed=True):
-        param_changed = super().set_param(key, value, check_if_changed)
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
 
-        if param_changed:
-            device_startup.startup_dut()
-        return param_changed
+        if value_changed:
+            # custom set_param function starts here
+
+            # check if Fadc has been defined prior StartupCount or not
+            if 'Fadc' in swp_gbl.curr_params:
+                print('Fadc is defined before StartupCount.')
+            else:
+                print('Fadc is not defined before StartupCount.')
+                default_Fadc = 6000
+                swp_gbl.curr_params['Fadc'] = default_Fadc
+                print(
+                    'Assuming Fadc is to be changed after startup, Fadc has been defined to be default value of {}'.format(
+                        default_Fadc))
+
+            device_startup.startup_dut(swp_gbl.curr_params['Fadc'], swp_gbl.curr_params['DACState'], swp_gbl.curr_params['DACFout'])
+        return value_changed
 
 
 class Fin(GenericParams):
 
-    def set_param(self, key=None, value=None, check_if_changed=True):
-        param_changed = super().set_param(key, value, check_if_changed)
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
 
-        if param_changed:
+        if value_changed:
+            # custom set_param function starts here
+            # testbench.sigGen.set_frequency(value)
             if swp_gbl.shr_data['val5'] == 1010:
                 # print('doing some extra stuff in setting Fin')
-                swp_gbl.shr_logs['Fin_readback'] = 1
+                swp_gbl.shr_datalogs['Fin_readback'] = 1
             else:
-                swp_gbl.shr_logs['Fin_readback'] = 0
+                swp_gbl.shr_datalogs['Fin_readback'] = 0
 
-        return param_changed
+        return value_changed
 
 
-class CalibrationUsed(GenericParams):
+class Ain(GenericParams):
 
-    def set_param(self, key=None, value=None, check_if_changed=True):
-        param_changed = super().set_param(key, value, check_if_changed)
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
 
-        if param_changed:
-            if value is True:
-                print('Calibration is On.')
-            else:
-                print('Calibration is Off.')
+        if value_changed:
+            # custom set_param function starts here
+            # testbench.sigGen.set_amplitude(value) or
+            # kernel.servo_amplitude(value, tolerance=0.1)
+            pass
 
-        return param_changed
+        return value_changed
+
+
+class ADCCalibrationState(GenericParams):
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            # TxFE.configure_calibration(value)
+            pass
+        return value_changed
+
+
+class Supply(GenericParams):
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            # testbench.set_supplies(value)
+            pass
+        return value_changed
+
+
+class DACState(GenericParams):
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            pass
+        return value_changed
+
+
+class DACFout(GenericParams):
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            pass
+        return value_changed

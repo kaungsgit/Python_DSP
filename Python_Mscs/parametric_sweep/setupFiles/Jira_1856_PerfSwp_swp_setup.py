@@ -1,5 +1,6 @@
 import os
 from collections import OrderedDict
+import global_vars as swp_gbl
 
 swp_info = OrderedDict()
 
@@ -19,3 +20,5 @@ loop_param['DACFout'] = [None]
 loop_param['StartupCount'] = [1, 2]
 loop_param['ADCCalibrationState'] = [True, False]
 
+# includes some variables that can be specific to a sweep
+swp_gbl.shr_data['dummy data'] = 123

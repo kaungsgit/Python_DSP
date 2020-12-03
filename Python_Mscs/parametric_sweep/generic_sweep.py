@@ -17,10 +17,11 @@ swpSetupFiles = ['Jira_1856_PerfSwp_swp_setup']
 
 # run multiple sweep setup files
 for file in swpSetupFiles:
-    swpSetup = importlib.import_module('setupFiles.' + file)
 
     # reload global_vars to re-initialize them to blanks after each sweep setup file
     swp_gbl = importlib.reload(global_vars)
+
+    swpSetup = importlib.import_module('setupFiles.' + file)
 
     datalog_path = swp_gbl.datalog_path
     loop_param = swpSetup.loop_param

@@ -18,5 +18,4 @@ loop_param['DACState'] = [False]
 loop_param['DACFout'] = [None]
 loop_param['StartupCount'] = [1, 2]
 loop_param['ADCCalibrationState'] = [True, False]
-loop_param['Fin'] = [4500, 2234]
-loop_param['Ain'] = [-1]
+

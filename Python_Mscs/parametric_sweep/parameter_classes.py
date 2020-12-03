@@ -2,7 +2,7 @@ import global_vars as swp_gbl
 import device_startup
 
 
-class GenericParams:
+class GenericParam:
 
     def __init__(self, name='generic_param'):
         self.key = name
@@ -38,7 +38,7 @@ class GenericParams:
         return value_changed
 
 
-class Temp(GenericParams):
+class Temp(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)
@@ -57,7 +57,7 @@ class Temp(GenericParams):
         return value_changed
 
 
-class Fadc(GenericParams):
+class Fadc(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)
@@ -73,7 +73,7 @@ class Fadc(GenericParams):
         return value_changed
 
 
-class StartupCount(GenericParams):
+class StartupCount(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)
@@ -96,7 +96,7 @@ class StartupCount(GenericParams):
         return value_changed
 
 
-class Fin(GenericParams):
+class Fin(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)
@@ -113,7 +113,7 @@ class Fin(GenericParams):
         return value_changed
 
 
-class Ain(GenericParams):
+class Ain(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)
@@ -127,7 +127,7 @@ class Ain(GenericParams):
         return value_changed
 
 
-class ADCCalibrationState(GenericParams):
+class ADCCalibrationState(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)
@@ -139,7 +139,7 @@ class ADCCalibrationState(GenericParams):
         return value_changed
 
 
-class Supply(GenericParams):
+class SupplyPct(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)
@@ -151,7 +151,7 @@ class Supply(GenericParams):
         return value_changed
 
 
-class DACState(GenericParams):
+class DACState(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)
@@ -162,7 +162,7 @@ class DACState(GenericParams):
         return value_changed
 
 
-class DACFout(GenericParams):
+class DACFout(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):
         value_changed = super().set_param(key, value, check_if_value_changed)

@@ -1,3 +1,10 @@
+"""
+@author: ksanoo
+@updated_at: 12/4/2020
+@description: All parameters that are to be swept (specified in sweep_setup files) must have a class definition in
+this script. The class name must be the same as the parameter key in loop_param
+"""
+
 import global_vars as swp_gbl
 import device_startup
 
@@ -92,7 +99,8 @@ class StartupCount(GenericParam):
                     'Assuming Fadc is to be changed after startup, Fadc has been defined to be default value of {}'.format(
                         default_Fadc))
 
-            device_startup.startup_dut(swp_gbl.curr_params['Fadc'], swp_gbl.curr_params['DACState'], swp_gbl.curr_params['DACFout'])
+            device_startup.startup_dut(swp_gbl.curr_params['Fadc'], swp_gbl.curr_params['DACState'],
+                                       swp_gbl.curr_params['DACFout'])
         return value_changed
 
 

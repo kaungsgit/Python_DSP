@@ -1,3 +1,10 @@
+"""
+@author: ksanoo
+@updated_at: 12/4/2020
+@description: Contains OutputFile class, which is responsible for creating datalog hierarchy folders.
+log_data is the function that pulls ADC AC perf data such as SNR or NFLR or DAC perf data from spec analyzer
+"""
+
 import csv
 from collections import OrderedDict
 import numpy as np

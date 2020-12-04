@@ -1,3 +1,12 @@
+"""
+@author: ksanoo
+@updated_at: 12/4/2020
+@description: Main script for running the parametric sweep code.
+Sweep setup files, where what parameter and what values to be swept are defined, are located under setup_files.
+Parameter classes with set_param methods are in parameter_classes.py.
+.csv data files will appear under the folder datalogs.
+"""
+
 import numpy as np
 from collections import OrderedDict
 
@@ -11,17 +20,17 @@ import datalogger
 import os
 import importlib
 
-# swpSetupFiles = ['Jira_1856_PerfSwp_swp_setup', 'Jira_1857_changeFadcFast_swp_setup', 'Jira_1858_noFin_swp_setup',
+# swp_setup_files = ['Jira_1856_PerfSwp_swp_setup', 'Jira_1857_changeFadcFast_swp_setup', 'Jira_1858_noFin_swp_setup',
 #                  'Jira_1860_VT_FullChip_swp_setup', 'Jira_1859_VTFs_swp_setup']
-swpSetupFiles = ['Jira_1856_PerfSwp_swp_setup']
+swp_setup_files = ['Jira_1856_PerfSwp_swp_setup']
 
 # run multiple sweep setup files
-for file in swpSetupFiles:
+for file in swp_setup_files:
 
     # reload global_vars to re-initialize them to blanks after each sweep setup file
     swp_gbl = importlib.reload(global_vars)
 
-    swpSetup = importlib.import_module('setupFiles.' + file)
+    swpSetup = importlib.import_module('setup_files.' + file)
 
     datalog_path = swp_gbl.datalog_path
     loop_param = swpSetup.loop_param

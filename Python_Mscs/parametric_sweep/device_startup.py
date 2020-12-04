@@ -1,4 +1,10 @@
-# Device startup script
+"""
+@author: ksanoo
+@updated_at: 12/4/2020
+@description: Golden DUT startup script
+"""
+
+
 def startup_dut(Fadc, DACState, DACFout):
     # TxFE.configure_ADC(Fadc)
     # if DACState is True:

@@ -1,6 +1,6 @@
 # main file
 """ this exercise proves that variable a in scriptA behaves like a true global variable
-that retains its value (updated by other scripts)"""
+that reflects its updated value (updated by other scripts)"""
 
 import scriptA_global_var as swp_gbl
 import scriptB_write as param_classes

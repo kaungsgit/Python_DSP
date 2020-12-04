@@ -7,4 +7,7 @@ def startup_dut(Fadc, DACState, DACFout):
 
 
 if __name__ == '__main__':
-    startup_dut()
+    Fadc = 6e3
+    DACState = False
+    DACFout = None
+    startup_dut(Fadc, DACState, DACFout)

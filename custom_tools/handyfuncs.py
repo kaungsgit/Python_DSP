@@ -22,3 +22,14 @@ def responsePlot(w, h, title):
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('Angle [deg]')
     # plt.show()
+
+
+def return_sci_notation(x):
+    x = format(x, 'e')
+    num, pow10 = x.split('e')
+
+    num = float(num)
+
+    pow10 = float(pow10)
+
+    return num, pow10

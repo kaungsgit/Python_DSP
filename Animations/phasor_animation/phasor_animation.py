@@ -9,9 +9,7 @@ Press any keyboard key to pause the animation
 """
 
 # @todo
-# find out why the update is slow
 # reorganize the object oriented scheme
-# fix rect plot time axis
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,7 +70,7 @@ continuous = False
 
 # if set True, all phasors in rotating_phasors will spin with respect to center of polar plot
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
-spin_orig_center = False
+spin_orig_center = True
 
 # pass in phasor arrays directly when True
 # this flag must be set to False if you're working with input_vector and FT_mode
@@ -80,6 +78,7 @@ pass_direct_phasor_list = True
 
 FT_mode = False
 double_sided_FFT = True
+fft_mag_in_log = True
 
 # this data is from noise cancellation filter
 input_vector = np.array([0.13083826, 0.12517881, 0.11899678, 0.11231907, 0.10508106,
@@ -101,11 +100,12 @@ amp2 = 1
 f2 = 2e3
 phi2 = 0
 
-# turning coherency on will drift the rect displays... Find a way to fix this!
-# also, add freq display to FFT plot so that the updated coherency frequency is explicit
-# f1, _ = dsp_acs.calc_coherent_freq(f1, Fs, num_sampls)
-# f2, _ = dsp_acs.calc_coherent_freq(f2, Fs, num_sampls)
-# f3, _ = dsp_acs.calc_coherent_freq(20e6, Fs, num_sampls)
+# turning coherency on will drift the rect displays
+# This happens when Fs/fund is not an integer since the coherency works only for whole window length (num_sampls),
+# and rect plot shows only one cycle
+f1, _ = dsp_acs.calc_coherent_freq(f1, Fs, num_sampls)
+f2, _ = dsp_acs.calc_coherent_freq(f2, Fs, num_sampls)
+f3, _ = dsp_acs.calc_coherent_freq(20e6, Fs, num_sampls)
 
 fund_period = 1 / f1
 w0 = 2 * pi * f1
@@ -121,8 +121,13 @@ if pass_direct_phasor_list:
         # np.sin(2 * pi * f1 * x_t),
         # 0.5 * np.sin(2 * pi * f1 * 2 * x_t + 3 * pi / 4),
 
-        # complex cosine
-        amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)) + 0.1 * np.random.randn(2 ** 12),
+        # complex cosine with noise
+        # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+
+        # complex cosine with noise
+        amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        0.1 * 1j * np.random.randn(num_sampls),
+        0.1 * 1 * np.random.randn(num_sampls),
 
         # real cosine
         # amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
@@ -686,7 +691,10 @@ winscale = np.sum(win)
 win_data = win * sum_sig
 
 yf = fft(sum_sig)
-xf = fft_acs.fftfreq_RLyonBook(num_sampls, 1 / Fs)
+# use this if you're trying to validate results from RLyon book
+# otherwise, comment out since it'll show a weird horizontal line that can't be fixed by fftshift
+# xf = fft_acs.fftfreq_RLyonBook(num_sampls, 1 / Fs)
+xf = fftfreq(num_sampls, 1 / Fs)
 ax_rect_fft = plt.subplot(3, 2, 3)
 ax_rect_fft.set_xlabel('Frequency [kHz]')
 ax_rect_fft.set_ylabel('Magnitude')
@@ -701,17 +709,26 @@ sumg_sig_10pct = sum_sig[0:round(len(sum_sig) * 0.1) + 1]
 # fft magnitude scaling depending whether input is real or complex
 if np.all(np.isreal(np.round(sumg_sig_10pct, 3))):
     # if input is real
-    ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)
+
+    if fft_mag_in_log:
+        ax_rect_fft.plot(xf / 1e3, 20 * np.log10(2 / num_sampls * np.abs(yf)))
+    else:
+        ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)
+
 else:
     # if input is complex
     # do not need 2/N since there's already a 1/2 factor
     # in sinx = (e^jx - e^-jx) / 2j and cox = (e^jx + e^-jx) / 2
     # for complex sig, it's just e^jx, not e^jx / 2
     # Ensure there's no /2 in rotating_phasors if giving complex input
-    ax_rect_fft.stem(xf / 1e3, 1.0 / num_sampls * np.abs(yf), use_line_collection=True)
 
-fft_text = ax_rect_fft.text(0.05, 0.9, '', transform=ax_rect_fft.transAxes)
-fft_text.set_text('f1={}Hz'.format(f1))
+    if fft_mag_in_log:
+        ax_rect_fft.plot(xf / 1e3, 20 * np.log10(1.0 / num_sampls * np.abs(yf)))
+    else:
+        ax_rect_fft.stem(xf / 1e3, 1.0 / num_sampls * np.abs(yf), use_line_collection=True)
+
+fft_text = ax_rect_fft.text(0.05, 0.8, '', transform=ax_rect_fft.transAxes)
+fft_text.set_text('f1={}Hz \nFs/f1={}'.format(round(f1, 4), round(Fs / f1, 4)))
 
 ax_rect_fft = plt.subplot(3, 2, 5)
 ax_rect_fft.stem(xf / 1e3, fft_acs.angle2(np.round(yf, 1)) * 180 / pi, use_line_collection=True)

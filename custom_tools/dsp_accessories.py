@@ -2,6 +2,13 @@ import numpy as np
 
 
 def calc_coherent_freq(fin, fs, N):
+    """
+    fS is the sampling frequency
+    fIN is the input frequency
+    M is the integer number of cycles in the data record
+    N is the integer, factor of 2, number of samples in the record
+    """
+
     M = np.floor(fin / fs * N)
     if M % 2 == 0:
         print('M is even')

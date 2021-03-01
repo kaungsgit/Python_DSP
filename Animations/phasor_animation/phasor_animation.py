@@ -78,7 +78,7 @@ pass_direct_phasor_list = True
 
 FT_mode = False
 double_sided_FFT = True
-fft_mag_in_log = True
+fft_mag_in_log = False
 
 # this data is from noise cancellation filter
 input_vector = np.array([0.13083826, 0.12517881, 0.11899678, 0.11231907, 0.10508106,
@@ -125,13 +125,13 @@ if pass_direct_phasor_list:
         # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
 
         # complex cosine with noise
-        amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
-        0.1 * 1j * np.random.randn(num_sampls),
-        0.1 * 1 * np.random.randn(num_sampls),
+        # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        # 0.1 * 1j * np.random.randn(num_sampls),
+        # 0.1 * 1 * np.random.randn(num_sampls),
 
         # real cosine
-        # amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
-        # amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
+        amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
 
         # real sine 1
         # amp1 / 2j * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
@@ -710,10 +710,17 @@ sumg_sig_10pct = sum_sig[0:round(len(sum_sig) * 0.1) + 1]
 if np.all(np.isreal(np.round(sumg_sig_10pct, 3))):
     # if input is real
 
+    # 2/N * FFT_mag is somewhat correct but if you're showing both sides of spectrum, better to just do 1/N for both
+    # real and complex signals (two 0.5 amp phasors combine to be 1 for the signal)
+    # if fft_mag_in_log:
+    #     ax_rect_fft.plot(xf / 1e3, 20 * np.log10(2 / num_sampls * np.abs(yf)))
+    # else:
+    #     ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)
+
     if fft_mag_in_log:
-        ax_rect_fft.plot(xf / 1e3, 20 * np.log10(2 / num_sampls * np.abs(yf)))
+        ax_rect_fft.plot(xf / 1e3, 20 * np.log10(1 / num_sampls * np.abs(yf)))
     else:
-        ax_rect_fft.stem(xf / 1e3, 2 / num_sampls * np.abs(yf), use_line_collection=True)
+        ax_rect_fft.stem(xf / 1e3, 1 / num_sampls * np.abs(yf), use_line_collection=True)
 
 else:
     # if input is complex

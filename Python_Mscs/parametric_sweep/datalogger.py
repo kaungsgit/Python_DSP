@@ -91,7 +91,7 @@ def log_data(results_file_path, swp_info, curr_params, shr_logs):
         else:
             analysis_collection['DACFout Power'] = None
     else:
-        analysis_collection['DACFout Power'] = -10
+        analysis_collection['DACFout Power'] = -100
     '''----------------------------------------Dummy measurements----------------------------------------'''
 
     exists = os.path.exists(results_file_path)

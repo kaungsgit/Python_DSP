@@ -45,6 +45,32 @@ class GenericParam:
         return value_changed
 
 
+class TestParameter1(GenericParam):
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            print('>>> Executing TestParameter1.set_param...')
+            pass
+
+        return value_changed
+
+
+class TestParameter2(GenericParam):
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            print('>>> Executing TestParameter2.set_param...')
+            pass
+
+        return value_changed
+
+
 class Temp(GenericParam):
 
     def set_param(self, key=None, value=None, check_if_value_changed=True):

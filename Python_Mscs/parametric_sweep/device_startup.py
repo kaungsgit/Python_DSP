@@ -5,7 +5,8 @@
 """
 
 
-def startup_dut(Fadc, DACState, DACFout):
+def startup_dut(Fadc, DACState):
+    # sig_gen.set_freq(Fadc)
     # TxFE.configure_ADC(Fadc)
     # if DACState is True:
     #     TxFE.configure_DAC(DACFout)
@@ -16,4 +17,4 @@ if __name__ == '__main__':
     Fadc = 6e3
     DACState = False
     DACFout = None
-    startup_dut(Fadc, DACState, DACFout)
+    startup_dut(Fadc, DACState)

@@ -9,6 +9,10 @@ import global_vars as swp_gbl
 import device_startup
 
 
+def bf_write(bf_name, value):
+    print('Executing bf_write({}, {})...'.format(bf_name, value))
+
+
 class GenericParam:
 
     def __init__(self, name='generic_param'):
@@ -66,6 +70,19 @@ class TestParameter2(GenericParam):
         if value_changed:
             # custom set_param function starts here
             print('>>> Executing TestParameter2.set_param...')
+            pass
+
+        return value_changed
+
+
+class BitfieldWrite(GenericParam):
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            bf_write(key, value)  # bf_ has been removed from key
             pass
 
         return value_changed

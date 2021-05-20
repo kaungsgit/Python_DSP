@@ -66,25 +66,33 @@ def log_data(results_file_path, swp_info, curr_params, shr_logs):
     analysis_collection = merge_dicts(swp_info, curr_params)
     analysis_collection = merge_dicts(analysis_collection, shr_logs)
 
+    '''----------------------------------------Dummy measurements----------------------------------------'''
     # Dummy ADC SNR measurement
-    if 'Fin' in curr_params:
-        if curr_params['ADCCalibrationState'] is True:
-            analysis_collection['SNR'] = 0.2 * np.random.randn() + 56
+    if 'ADCCalibrationState' in curr_params:
+        if 'Fin' in curr_params:
+            if curr_params['ADCCalibrationState'] is True:
+                analysis_collection['SNR'] = round(0.2 * np.random.randn() + 56, 2)
+            else:
+                analysis_collection['SNR'] = round(0.2 * np.random.randn() + 54, 2)
         else:
-            analysis_collection['SNR'] = 0.2 * np.random.randn() + 54
+            # no signal in ADC spectrum case
+            if curr_params['ADCCalibrationState'] is True:
+                analysis_collection['SNR'] = round(0.2 * np.random.randn() + -35, 2)
+            else:
+                analysis_collection['SNR'] = round(0.2 * np.random.randn() + -30, 2)
     else:
-        # no signal in ADC spectrum case
-        if curr_params['ADCCalibrationState'] is True:
-            analysis_collection['SNR'] = 0.2 * np.random.randn() + -35
-        else:
-            analysis_collection['SNR'] = 0.2 * np.random.randn() + -30
+        analysis_collection['SNR'] = 56.7
 
     # Dummy DAC Fout measurement
-    if curr_params['DACState'] is True:
-        # specAnalyzer.measureTone(curr_params['DACFout'])
-        analysis_collection['DACFout Power'] = 0.2 * np.random.randn() + -7
+    if 'DACState' in curr_params and 'DACPwr' in curr_params:
+        if curr_params['DACState'] is True:
+            # specAnalyzer.measureTone(curr_params['DACFout'])
+            analysis_collection['DACFout Power'] = round(0.2 * np.random.randn() + curr_params['DACPwr'], 2)
+        else:
+            analysis_collection['DACFout Power'] = None
     else:
-        analysis_collection['DACFout Power'] = None
+        analysis_collection['DACFout Power'] = -10
+    '''----------------------------------------Dummy measurements----------------------------------------'''
 
     exists = os.path.exists(results_file_path)
 

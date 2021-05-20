@@ -22,7 +22,9 @@ import importlib
 
 # swp_setup_files = ['Jira_1856_PerfSwp_swp_setup', 'Jira_1857_changeFadcFast_swp_setup', 'Jira_1858_noFin_swp_setup',
 #                  'Jira_1860_VT_FullChip_swp_setup', 'Jira_1859_VTFs_swp_setup']
-swp_setup_files = ['Jira_1856_PerfSwp_swp_setup']
+# swp_setup_files = ['Jira_1856_PerfSwp_swp_setup']
+
+swp_setup_files = ['Jira_1900_forloop_vs_myframework']
 
 # run multiple sweep setup files
 for file in swp_setup_files:
@@ -49,7 +51,7 @@ for file in swp_setup_files:
 
     for curr_perm in permutations:
         # this makes the set_param method to check for changes in set value being passed in
-        print(curr_perm)
+        # print(curr_perm)
         check_if_value_changed = True
 
         for param_key, param_value in curr_perm.items():

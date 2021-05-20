@@ -24,7 +24,8 @@ import importlib
 #                  'Jira_1860_VT_FullChip_swp_setup', 'Jira_1859_VTFs_swp_setup']
 # swp_setup_files = ['Jira_1856_PerfSwp_swp_setup']
 
-swp_setup_files = ['Jira_1900_forloop_vs_myframework']
+# swp_setup_files = ['Jira_1900_forloop_vs_myframework']
+swp_setup_files = ['Jira_1901_bitfieldWrite_example']
 
 # run multiple sweep setup files
 for file in swp_setup_files:
@@ -57,8 +58,14 @@ for file in swp_setup_files:
         for param_key, param_value in curr_perm.items():
             # print(f'param_key is {param_key} and param_value is {param_value}')
 
-            # create the class from param_key
-            curr_param_class = eval('parameter_classes' + '.' + param_key)
+            if param_key[0:3] == 'bf_':
+                # for all bitfield writes, the class BitfieldWrite is used
+                curr_param_class = eval('parameter_classes' + '.' + 'BitfieldWrite')
+                param_key = param_key[3:]
+
+            else:
+                # create the class from param_key
+                curr_param_class = eval('parameter_classes' + '.' + param_key)
             # create class instance from param_key
             curr_param_class_instance = curr_param_class(name=param_key)
             # call set_param method on each parameter class

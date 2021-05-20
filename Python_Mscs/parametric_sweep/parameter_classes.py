@@ -53,6 +53,7 @@ class Temp(GenericParam):
         if value_changed:
             # custom set_param function starts here
             # oven.set_temp(value)
+            # sensata.set_temp(value)
             if value == -10:
                 # set some variable that other param classes will use
                 swp_gbl.shr_data['val1'] = 10
@@ -71,11 +72,13 @@ class Fadc(GenericParam):
 
         if value_changed:
             # custom set_param function starts here
-            if swp_gbl.shr_data['val1'] == 10:
-                # print('doing some extra stuff in setting Fadc')
-                swp_gbl.shr_datalogs['Fadc_readback'] = 1
-            else:
-                swp_gbl.shr_datalogs['Fadc_readback'] = 0
+            pass
+
+            # if swp_gbl.shr_data['val1'] == 10:
+            #     # print('doing some extra stuff in setting Fadc')
+            #     swp_gbl.shr_datalogs['Fadc_readback'] = 1
+            # else:
+            #     swp_gbl.shr_datalogs['Fadc_readback'] = 0
 
         return value_changed
 
@@ -99,8 +102,7 @@ class StartupCount(GenericParam):
                     'Assuming Fadc is to be changed after startup, Fadc has been defined to be default value of {}'.format(
                         default_Fadc))
 
-            device_startup.startup_dut(swp_gbl.curr_params['Fadc'], swp_gbl.curr_params['DACState'],
-                                       swp_gbl.curr_params['DACFout'])
+            device_startup.startup_dut(swp_gbl.curr_params['Fadc'], swp_gbl.curr_params['DACState'])
         return value_changed
 
 
@@ -112,12 +114,13 @@ class Fin(GenericParam):
         if value_changed:
             # custom set_param function starts here
             # testbench.sigGen.set_frequency(value)
-            if swp_gbl.shr_data['val5'] == 1010:
-                # print('doing some extra stuff in setting Fin')
-                swp_gbl.shr_datalogs['Fin_readback'] = 1
-            else:
-                swp_gbl.shr_datalogs['Fin_readback'] = 0
 
+            # if swp_gbl.shr_data['val5'] == 1010:
+            #     # print('doing some extra stuff in setting Fin')
+            #     swp_gbl.shr_datalogs['Fin_readback'] = 1
+            # else:
+            #     swp_gbl.shr_datalogs['Fin_readback'] = 0
+            pass
         return value_changed
 
 
@@ -155,7 +158,11 @@ class SupplyPct(GenericParam):
         if value_changed:
             # custom set_param function starts here
             # testbench.set_supplies(value)
+
+            # example logging using shr_datalogs
+            swp_gbl.shr_datalogs['AVDD1 Voltage'] = 1 + (value * 0.01)
             pass
+
         return value_changed
 
 
@@ -178,4 +185,66 @@ class DACFout(GenericParam):
         if value_changed:
             # custom set_param function starts here
             pass
+        return value_changed
+
+
+class DACPwr(GenericParam):
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            pass
+        return value_changed
+
+
+class Fin1(GenericParam):
+    """ Everything is the same as Fin except you're referencing a different sig generator """
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            # testbench.sigGen1.set_frequency(value)
+
+            pass
+        return value_changed
+
+
+class Ain1(GenericParam):
+    """ Everything is the same as Ain except you're referencing a different sig generator """
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            # testbench.sigGen1.set_amplitude(value) or
+            # kernel.servo_amplitude(value, tolerance=0.1)
+            pass
+
+        return value_changed
+
+
+class Ain_Ain1(GenericParam):
+    """ Bind Ain and Ain1. Value is now an array of two elements """
+
+    def set_param(self, key=None, value=None, check_if_value_changed=True):
+        value_changed = super().set_param(key, value, check_if_value_changed)
+
+        if value_changed:
+            # custom set_param function starts here
+            # testbench.sigGen1.set_amplitude(value) or
+            # kernel.servo_amplitude(value, tolerance=0.1)
+
+            Ain_inst = Ain()
+            Ain1_inst = Ain1()
+
+            Ain_inst.set_param(value[0])
+            Ain1_inst.set_param(value[1])
+
+            pass
+
         return value_changed

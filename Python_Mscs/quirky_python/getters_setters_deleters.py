@@ -16,7 +16,7 @@ affecting the program, so you can add getters, setters, and deleters that act as
 class House:
 
     def __init__(self, price):
-        self._price = price
+        self._price = price  # private attribute
 
     @property
     def price(self):

@@ -24,8 +24,8 @@ import importlib
 #                  'Jira_1860_VT_FullChip_swp_setup', 'Jira_1859_VTFs_swp_setup']
 # swp_setup_files = ['Jira_1856_PerfSwp_swp_setup']
 
-# swp_setup_files = ['Jira_1900_forloop_vs_myframework']
-swp_setup_files = ['Jira_1901_bitfieldWrite_example']
+swp_setup_files = ['Jira_1900_forloop_vs_myframework']
+# swp_setup_files = ['Jira_1901_bitfieldWrite_example']
 
 # run multiple sweep setup files
 for file in swp_setup_files:

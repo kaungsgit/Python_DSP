@@ -13,5 +13,6 @@ swp_info['misc_tag'] = 'forloop_vs_myframework'
 # add more loop params here
 # the loop param objects created must have the same name as the key entered here
 loop_param = OrderedDict()
+loop_param['Temp'] = [-25]
 loop_param['bf_pll_en'] = [0, 1]
 loop_param['bf_rx_clk_sel'] = [0, 1, 2, 3]

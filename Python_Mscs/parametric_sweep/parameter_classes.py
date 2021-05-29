@@ -97,13 +97,10 @@ class Temp(GenericParam):
             # custom set_param function starts here
             # oven.set_temp(value)
             # sensata.set_temp(value)
-            if value == -10:
-                # set some variable that other param classes will use
-                swp_gbl.shr_data['val1'] = 10
-                swp_gbl.shr_data['val5'] = 1010
+            if value == -40:
+                swp_gbl.shr_data['some_temp_related_var'] = 1024
             else:
-                swp_gbl.shr_data['val1'] = -1
-                swp_gbl.shr_data['val5'] = -5
+                swp_gbl.shr_data['some_temp_related_var'] = 512
 
         return value_changed
 
@@ -117,11 +114,10 @@ class Fadc(GenericParam):
             # custom set_param function starts here
             pass
 
-            # if swp_gbl.shr_data['val1'] == 10:
-            #     # print('doing some extra stuff in setting Fadc')
-            #     swp_gbl.shr_datalogs['Fadc_readback'] = 1
-            # else:
-            #     swp_gbl.shr_datalogs['Fadc_readback'] = 0
+            if swp_gbl.shr_data['some_temp_related_var'] == 1024:
+                print('Brace TxFEs. Winter is coming!')
+            else:
+                pass
 
         return value_changed
 

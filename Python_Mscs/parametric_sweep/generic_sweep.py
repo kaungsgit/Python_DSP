@@ -60,7 +60,7 @@ for file in swp_setup_files:
 
             if param_key[0:3] == 'bf_':
                 # for all bitfield writes, the class BitfieldWrite is used
-                curr_param_class = eval('parameter_classes' + '.' + 'BitfieldWrite')
+                curr_param_class = eval('parameter_classes' + '.' + 'GenericBitfieldWrite')
                 param_key = param_key[3:]
 
             else:

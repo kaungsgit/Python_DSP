@@ -1,3 +1,9 @@
+"""
+@author: ksanoo
+@updated_at: 5/29/2021
+@description: example code for showing traditional for nested loop sweeping (compare this with my parametric sweep)
+"""
+
 temps = [125, -40]
 sample_rates = [6000, 8000]
 

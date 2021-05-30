@@ -1,7 +1,8 @@
 Scalable Parametric Sweep Framework By Kaung Myat San Oo (kaung.sanoo@analog.com)
 
-Main script for running the parametric sweep code is generic_sweep.py. 
+generic_sweep.py: Main script for running the parametric sweep code.
 - Run this file to perform parametric sweep with the specified setup file.
-Sweep setup files, where what parameter and what values to be swept are defined, are located under setupFiles.
-Parameter classes with set_param methods are in parameter_classes.py. Add more parameter classes to suit your eval needs.
-.csv data files will appear under the folder datalogs.
+setup_files: Contains sweep setup files (_swp_setup.py), where parameters to be swept are defined.
+parameter_classes.py: Parameter classes with set_param methods are located here. Add more parameter classes to suit your eval needs.
+- This is the file that you and your team will contribute towards to create a collection of parameter classes that everyone can use to perform their sweeps.
+datalogs: Output .csv data files will appear under here.

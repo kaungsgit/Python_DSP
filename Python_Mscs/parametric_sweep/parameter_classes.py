@@ -157,8 +157,7 @@ class Temp(GenericParam):
 
         if value_changed:
             # custom set_param function starts here
-            # oven.set_temp(value)
-            # sensata.set_temp(value)
+            # oven.set_temp(value) or sensata.set_temp(value)
             if value == -40:
                 swp_gbl.shr_data['some_temp_related_var'] = 1024
             else:
@@ -186,10 +185,10 @@ class Fadc(GenericParam):
 
         if value_changed:
             # custom set_param function starts here
-            pass
+            # DUT.set_fadc(value)
 
             if swp_gbl.shr_data['some_temp_related_var'] == 1024:
-                print('Brace TxFEs. Winter is coming!')
+                print('Brace the DUT. Winter is coming!')
             else:
                 pass
 

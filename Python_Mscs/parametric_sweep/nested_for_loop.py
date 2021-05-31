@@ -5,7 +5,7 @@
 """
 
 temps = [125, -40]
-sample_rates = [6000, 8000]
+Fadc_list = [6000, 8000]
 
 
 def set_temp(temp_val):
@@ -27,10 +27,10 @@ for temp in temps:
     else:
         some_temp_related_var = 512
 
-    for sample_rate in sample_rates:
-        set_sample_rate(sample_rate)
+    for Fadc in Fadc_list:
+        set_sample_rate(Fadc)
         if some_temp_related_var == 1024:
-            print('Brace TxFEs. Winter is coming!')
+            print('Brace the DUT. Winter is coming!')
             pass
 
         collect_data()

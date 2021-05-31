@@ -4,6 +4,8 @@
 @description: Golden DUT startup script
 """
 
+print('something')
+
 
 def startup_dut(Fadc, DACState):
     # sig_gen.set_freq(Fadc)

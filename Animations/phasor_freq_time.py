@@ -105,6 +105,16 @@ def returnSciNotation(x):
     return num, pow10
 
 
+# ********************* choose operating mode here *********************
+# direct_phasor:    Enter time-domain signals (such as real cosine, complex cosine) in rotating_phasors.
+#                   See predefined examples below.
+# FT_mode:          Enter time domain samples (real or complex) in input_vector and the polar plot will
+#                   show reconstructed time domain samples
+# FIR_mode:         Enter FIR filter coefficients h[k] or bk in input vector. polar plot will show how frequency
+#                   response of FIR filter is made
+available_op_modes = ['direct_phasor', 'FT_mode', 'FIR_mode']
+op_mode = 'FT_mode'
+
 Fs = 80e3  # 200kHz    (Sample Rate)
 
 Ts = 1 / Fs
@@ -133,20 +143,20 @@ continuous = False
 # if False, all phasors will spin with respect to the end of the previous phasor end point (true vector addition)
 spin_orig_center = False
 
-# pass in phasor arrays directly when True
-# this flag must be set to False if you're working with input_vector and FT_mode
-pass_direct_phasor_list = True
-
-FT_mode = False
 double_sided_FFT = True
 
-# this data is from noise cancellation filter
-input_vector = np.array([0.13083826, 0.12517881, 0.11899678, 0.11231907, 0.10508106,
-                         0.09738001, 0.08925131, 0.08073239, 0.07186244, 0.06268219,
-                         0.05323363, 0.04355975, 0.03370433, 0.02371163, 0.01362624,
-                         0.00349278, -0.00664429, -0.01674086, -0.0267534, -0.03663912])
+# turning coherency on will drift the rect displays, but produces clean FFTs
+# This happens when Fs/fund is not an integer since the coherency works only for whole window length (num_sampls),
+# and rect plot shows only one cycle
+coherency = True
 
-input_vector = np.array([1, -1])
+# this data is from noise cancellation filter
+# input_vector = np.array([0.13083826, 0.12517881, 0.11899678, 0.11231907, 0.10508106,
+#                          0.09738001, 0.08925131, 0.08073239, 0.07186244, 0.06268219,
+#                          0.05323363, 0.04355975, 0.03370433, 0.02371163, 0.01362624,
+#                          0.00349278, -0.00664429, -0.01674086, -0.0267534, -0.03663912])
+
+input_vector = np.array([1, -1, -1 + 2j])
 N = len(input_vector)
 
 max_mag = np.absolute(input_vector).max()
@@ -160,9 +170,10 @@ amp2 = 1
 f2 = 2e3
 phi2 = 0
 
-f1, _ = coherency_calc(f1, Fs, num_sampls)
-f2, _ = coherency_calc(f2, Fs, num_sampls)
-f3, _ = coherency_calc(20e6, Fs, num_sampls)
+if coherency:
+    f1, _ = coherency_calc(f1, Fs, num_sampls)
+    f2, _ = coherency_calc(f2, Fs, num_sampls)
+    f3, _ = coherency_calc(20e6, Fs, num_sampls)
 
 fund_period = 1 / f1
 w0 = 2 * pi * f1
@@ -170,20 +181,30 @@ w0 = 2 * pi * f1
 # for complex down conversion example, shift amount, LO_freq, needed for center of band to be centered at DC
 LO_freq, _ = coherency_calc(f2 - f1 / 2, Fs, num_sampls)
 
-if pass_direct_phasor_list:
-    # manual phasor list
-
+if op_mode == 'direct_phasor':
+    # populate rotating_phasors with desired sinusoids
     rotating_phasors = [
         # Rick Lyon DFT Example, fs = 8kHz, f1 = 1kHz
-        np.sin(2 * pi * f1 * x_t),
-        0.5 * np.sin(2 * pi * f1 * 2 * x_t + 3 * pi / 4),
+        # np.sin(2 * pi * f1 * x_t),
+        # 0.5 * np.sin(2 * pi * f1 * 2 * x_t + 3 * pi / 4),
 
         # complex cosine
         # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
 
+        # complex cosine with noise
+        # amp1 / 1 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        # 0.1 * 1j * np.random.randn(num_sampls),
+        # 0.1 * 1 * np.random.randn(num_sampls),
+
+        # 9V battery: making 9V DC with phase.
+        # 9 * np.exp(1j * (2 * pi * 0 * x_t + pi)),
+
         # real cosine
-        # amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
-        # amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
+        amp1 / 2 * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
+        amp1 / 2 * np.exp(-1j * (2 * pi * f1 * x_t + phi1)),
+
+        # real cosine, no phasors
+        # amp1 * np.cos(2 * pi * f1 * x_t + phi1),
 
         # real sine 1
         # amp1 / 2j * np.exp(1j * (2 * pi * f1 * x_t + phi1)),
@@ -196,9 +217,9 @@ if pass_direct_phasor_list:
         # real sine in sine form, not euler's form
         # amp2 * np.sin(2 * pi * f2 * x_t + phi2)
 
-        # I-jQ (complex down conversion eg)
-        # f1 and f2 signify the lower and upper freq of a bandpass signal
-        # phase plot should be clean if all frequencies are coherent
+        # # I-jQ (complex down conversion eg)
+        # # f1 and f2 signify the lower and upper freq of a bandpass signal
+        # # phase plot should be clean if all frequencies are coherent
         # (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
         # * np.cos(2 * pi * LO_freq * x_t + phi2),
         # -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
@@ -206,41 +227,41 @@ if pass_direct_phasor_list:
 
     ]
 
-    # rotating_phasors = [np.sin(2 * pi * f1 * x_t) + 0.5 * np.sin(2 * pi * 2000 * x_t + 3 * pi / 4)]
+elif op_mode == 'FT_mode':
+    # if FT_mode:
+    # in this mode, input vector is time domain samples (real or complex) and
+    # the polar plot will show reconstructed time domain samples
+    xn = np.array(input_vector)
+    Xk = fft(xn)
 
-else:
-    if FT_mode:
-        # in this mode, input vector is time  domain samples (real or complex) and
-        # the polar plot will show reconstructed time domain samples
-        xn = np.array(input_vector)
-        Xk = fft(xn)
-
-        if double_sided_FFT:
-            freq_idx = fftfreq1(N, 1 / N)
-        else:
-            freq_idx = np.arange(0, N, 1)
-        # Xk = fftshift(Xk)
-        # freq_idx = fftshift(freq_idx)
-
-        # inverse FFT to check, should be the same as input_vector
-        inverseFFT = ifft(Xk)
-        # rewriting inverse DFT equation
-        # xn = 1/N summation k=0 to N-1 {Xk * e^(j * 2pi * k * n / N)
-        for k, X_curr_k in zip(freq_idx, Xk):
-            rotating_phasors.append(1 / N * X_curr_k *
-                                    np.array(np.exp(
-                                        1j * (2 * pi * f1 * k * n / 1))))  # 1/N term is not included, it's just speed
-
+    if double_sided_FFT:
+        freq_idx = fftfreq1(N, 1 / N)
     else:
-        # in this mode, input vector is FIR filter coefficients h[k] or bk
-        # polar plot will show how frequency response of FIR filter is made
-        filt_coeffs = np.array(input_vector)
+        freq_idx = np.arange(0, N, 1)
+    # Xk = fftshift(Xk)
+    # freq_idx = fftshift(freq_idx)
 
-        # rewriting frequency response of FIR filter
-        # H(e^jw) = summation k=0 to M-1 {bk e^(-j * w0 * k)}
-        for k, b_curr_k in enumerate(filt_coeffs):
-            rotating_phasors.append(b_curr_k *
-                                    np.array(np.exp(-1j * (w0 * k * n))))
+    # inverse FFT to check, should be the same as input_vector
+    inverseFFT = ifft(Xk)
+    # rewriting inverse DFT equation
+    # xn = 1/N summation k=0 to N-1 {Xk * e^(j * 2pi * k * n / N)
+    for k, X_curr_k in zip(freq_idx, Xk):
+        rotating_phasors.append(1 / N * X_curr_k *
+                                np.array(np.exp(
+                                    1j * (2 * pi * f1 * k * n / 1))))  # 1/N term is not included, it's just speed
+
+elif op_mode == 'FIR_mode':
+    # in this mode, input vector is FIR filter coefficients h[k] or bk
+    # polar plot will show how frequency response of FIR filter is made
+    filt_coeffs = np.array(input_vector)
+
+    # rewriting frequency response of FIR filter
+    # H(e^jw) = summation k=0 to M-1 {bk e^(-j * w0 * k)}
+    for k, b_curr_k in enumerate(filt_coeffs):
+        rotating_phasors.append(b_curr_k *
+                                np.array(np.exp(-1j * (w0 * k * n))))
+else:
+    raise NotImplementedError(f'Please choose one of {available_op_modes}.')
 
 num_sigs = len(rotating_phasors)
 
@@ -670,7 +691,7 @@ ax_polar_cmbd = plt.subplot(3, 2, 1, projection='polar')
 # ax_polar_cmbd.set_ylim(-10, 10)
 
 
-if FT_mode:
+if op_mode == 'FT_mode':
     # plot the input_vector points on polar plot
     for point in input_vector:
         if ax_polar_cmbd.name == 'polar':
@@ -733,23 +754,11 @@ ax_rect_phase = plt.subplot(3, 2, 6)
 
 scope_main = Scope(len(rotating_phasors))
 
-interval = 20
+interval = 4000 / (Fs / f1)
 fig.canvas.mpl_connect('key_press_event', onClick)
 
 # pass a generator in "sineEmitter" to produce data for the update func
 ani = animation.FuncAnimation(fig, scope_main.update, sig_emitter, interval=interval,
                               blit=True)
-
-plt.figure()
-# I-j*Q
-# complex down conversion example, just FFT plotting
-sum_sig2 = sum([(amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-                * np.cos(2 * pi * (f2 - f1 / 2) * x_t + phi2),
-                -1j * (amp2 * np.cos(2 * pi * f2 * x_t + phi2) + 0.5 * np.cos(2 * pi * f1 * x_t + phi2))
-                * np.sin(2 * pi * (f2 - f1 / 2) * x_t + phi2)
-                ])
-fftplot.plot_spectrum(*fftplot.winfft(sum_sig2, fs=Fs), drange=120)
-plt.title('Complex Down Conversion Example')
-# ax_rect_fft.plot(np.unwrap(np.angle(np.round(yf, 1), deg=True)))
 
 plt.show()

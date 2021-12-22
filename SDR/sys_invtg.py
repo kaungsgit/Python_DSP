@@ -93,8 +93,12 @@ def s_plot_val_func(num, den, s_para):
 # - z domain default Fs is 1
 # - s domain fstop can be set through fstop_c
 
-T = np.pi / 100  # sampling period
-Fs = 1 / T
+# T = np.pi / 100  # sampling period
+# Fs = 1 / T
+
+Fs = 1e6
+T = 1 / Fs
+
 print('Sampling rate is {}Hz'.format(1 / T))
 z = con.tf('z')
 zm1 = 1 / z
@@ -118,9 +122,11 @@ Z2 = R2 / (1 + s * R2 * C2)
 
 # sys_und_tst = (s) / (1000 + s)
 # sys_und_tst = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
-sys_und_tst = Z2 / (Z1 + Z2)
+# sys_und_tst = Z2 / (Z1 + Z2)
 
 # discrete
+sys_und_tst = 1 + z ** -1
+# sys_und_tst = 1 / (1 + 1e-3 / (z - 1))
 
 # sys_und_tst = z / (z - 1)
 # sys_und_tst = 1 / (z - 1)
@@ -141,6 +147,8 @@ gg = s_plot_val_func(sys_und_tst.num, sys_und_tst.den, x)
 g = sp.lambdify([x], gg)
 
 fstop_c = 10e3
+# fstop_c = 1e6
+
 nsamp_pos_neg = 1000
 nsamp_single = int(nsamp_pos_neg / 2)
 
@@ -161,10 +169,12 @@ plt.ylabel("Magnitude")
 plt.grid()
 
 # plot frequency response log scale
+start_exponent = -9  # may need to adjust this to see correct reponse of very narrow dc notch filters
 if sys_und_tst.isdtime():
-    w = 2 * np.pi * np.logspace(-3, np.log10(0.5), nsamp_single)
+    w = 2 * np.pi * np.logspace(start_exponent, np.log10(0.5),
+                                nsamp_single)
 else:
-    w = 2 * np.pi * np.logspace(-3, np.log10(fstop_c), nsamp_single)
+    w = 2 * np.pi * np.logspace(start_exponent, np.log10(fstop_c), nsamp_single)
 
 mag, phase, w = con.freqresp(sys_und_tst, w)
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]

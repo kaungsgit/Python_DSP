@@ -22,8 +22,8 @@ z = con.tf('z')
 zm1 = 1 / z
 s = con.tf('s')
 
-Fs = 10 / np.pi
-# Fs = 100
+# Fs = 10 / np.pi
+Fs = 1e4
 print('Sampling rate is {}'.format(Fs))
 T = 1 / Fs
 
@@ -33,8 +33,8 @@ T = 1 / Fs
 
 K = 1
 # sysc = K * 1 / (s ** 3 + 2 * s ** 2 + 2 * s + 0)
-sysc = K * 1 / ((s + 1j) * (s - 1j))
-# sysc = 1 / s
+# sysc = K * 1 / ((s + 1j) * (s - 1j))
+sysc = s / (s + 1000)
 
 # remove imag parts in coeffs of sysc.den and num
 # imag 0j present if using symbolic expression and root_locus function stuck in complex warning:
@@ -54,7 +54,13 @@ zeta = 0.2
 
 print(sysc)
 
-c2d_method = 'impulse'
+c2d_method = 'zoh'
+# method (string, optional) – Method to be applied,
+# ‘zoh’ Zero-order hold on the inputs (default)
+# ‘foh’ First-order hold, currently not implemented
+# ‘impulse’ Impulse-invariant discretization, currently not implemented
+# ‘tustin’ Bilinear (Tustin) approximation, only SISO ‘matched’ Matched pole-zero method, only SISO
+
 
 # plot impulse response
 tc, youtc = con.impulse_response(sysc)
@@ -113,7 +119,7 @@ phasec = np.squeeze(phasec)
 sysd1 = con.c2d(sysc, T, method=c2d_method)
 print('Using sample system')
 print(1 / T * sysd1)
-
+print(sysd1)
 sysd = 1 / T * sysd1
 
 # plot impulse response
@@ -196,6 +202,27 @@ plt.semilogx(w / (2 * np.pi), np.unwrap(phased) * 180 / np.pi, '--', label='Disc
 plt.grid(which='major', linestyle='-', linewidth='0.5', color='gray')
 plt.grid(which='minor', linestyle=':', linewidth='0.5', color='gray')
 plt.xlabel('Frequency [Hz]')
+plt.ylabel('Phase [Deg]')
+# plt.title('Frequency Response - Comparison')
+plt.legend()
+
+plt.figure()
+plt.subplot(2, 1, 1)
+plt.semilogx(w, hf.db(magc), label='Continous')
+plt.semilogx(w, hf.db(magd), '--', label='Discrete')
+plt.grid(which='major', linestyle='-', linewidth='0.5', color='gray')
+plt.grid(which='minor', linestyle=':', linewidth='0.5', color='gray')
+plt.xlabel('Frequency [rad/s]')
+plt.ylabel('Magnitude [dB]')
+plt.title('Frequency Response - Comparison - rad/s')
+plt.legend()
+
+plt.subplot(2, 1, 2)
+plt.semilogx(w, np.unwrap(phasec) * 180 / np.pi, label='Continous')
+plt.semilogx(w, np.unwrap(phased) * 180 / np.pi, '--', label='Discrete')
+plt.grid(which='major', linestyle='-', linewidth='0.5', color='gray')
+plt.grid(which='minor', linestyle=':', linewidth='0.5', color='gray')
+plt.xlabel('Frequency [rad/s]')
 plt.ylabel('Phase [Deg]')
 # plt.title('Frequency Response - Comparison')
 plt.legend()

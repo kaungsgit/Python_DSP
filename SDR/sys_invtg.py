@@ -18,6 +18,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.cm as cm
 
 
+# import plotly.express as px
+
+
 def s_plane_plot(sys, sfunc, limits=[3, 3, 10], nsamp=500):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
@@ -120,13 +123,13 @@ Z1 = R1 / (1 + s * R1 * C1)
 Z2 = R2 / (1 + s * R2 * C2)
 # Z2 = 1 / (s * C3) * (R2 + 1 / (s * C2)) / (1 / (s * C3) + (R2 + 1 / (s * C2)))
 
-# sys_und_tst = (s) / (1000 + s)
+sys_und_tst = (s) / (1000 + s)
 # sys_und_tst = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
 # sys_und_tst = Z2 / (Z1 + Z2)
 
 # discrete
-sys_und_tst = 1 + z ** -1
-# sys_und_tst = 1 / (1 + 1e-3 / (z - 1))
+# sys_und_tst = 1 + z ** -1 # low pass fir filter
+# sys_und_tst = 1 / (1 + 1e-3 / (z - 1))  # dc notch filter
 
 # sys_und_tst = z / (z - 1)
 # sys_und_tst = 1 / (z - 1)
@@ -146,7 +149,7 @@ gg = s_plot_val_func(sys_und_tst.num, sys_und_tst.den, x)
 # https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
 g = sp.lambdify([x], gg)
 
-fstop_c = 10e3
+fstop_c = 1e6
 # fstop_c = 1e6
 
 nsamp_pos_neg = 1000
@@ -168,6 +171,8 @@ plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
 
+# fig = px.line(x=t_cd, y=im_resp, labels={'x': 'Time [s]', 'y': 'Magnitude'})
+# fig.show()
 # plot frequency response log scale
 start_exponent = -9  # may need to adjust this to see correct reponse of very narrow dc notch filters
 if sys_und_tst.isdtime():
@@ -194,6 +199,56 @@ plt.semilogx(w / (2 * np.pi), np.unwrap(phase) * 180 / np.pi)
 plt.grid()
 plt.xlabel('Frequency [Hz]')
 plt.ylabel('Phase [Deg]')
+
+# plot frequency response log scale, pi axis
+start_exponent = -9  # may need to adjust this to see correct reponse of very narrow dc notch filters
+if sys_und_tst.isdtime():
+    w = 2 * np.pi * np.logspace(start_exponent, np.log10(0.5),
+                                nsamp_single)
+else:
+    w = 2 * np.pi * np.logspace(start_exponent, np.log10(fstop_c), nsamp_single)
+
+mag, phase, w = con.freqresp(sys_und_tst, w)
+# freq response returns mag and phase as [[[mag]]], [[[phase]]]
+# squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
+mag = np.squeeze(mag)
+phase = np.squeeze(phase)
+plt.figure()
+plt.subplot(2, 1, 1)
+plt.semilogx(w, hf.db(mag))
+plt.grid()
+plt.xlabel('Frequency [rad/s]')
+plt.ylabel('Magnitude [dB]')
+plt.title('Frequency Response')
+
+plt.subplot(2, 1, 2)
+plt.semilogx(w, np.unwrap(phase) * 180 / np.pi)
+plt.grid()
+plt.xlabel('Frequency [rad/s]')
+plt.ylabel('Phase [Deg]')
+
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
+# # with plotly, it looks good but takes too long...
+# fig = make_subplots(rows=2, cols=1,
+#                     shared_xaxes=True,
+#                     vertical_spacing=0.02)
+#
+# fig.append_trace(go.Scatter(
+#     x=w / (2 * np.pi), y=hf.db(mag),
+# ), row=1, col=1)
+#
+# fig.append_trace(go.Scatter(
+#     x=w / (2 * np.pi), y=np.unwrap(phase) * 180 / np.pi,
+# ), row=2, col=1)
+#
+# fig.update_xaxes(title_text="Frequency [Hz]", type="log")
+# fig.update_yaxes(title_text="Mag [dB]", row=1, col=1)
+# fig.update_yaxes(title_text="Phase [Deg]", row=2, col=1)
+#
+# # fig.update_layout(height=600, width=600, title_text="Stacked Subplots")
+# fig.show()
 
 # plot frequency response linear scale
 # beware the difference between linspace and logspace and that we're using only 100 points total

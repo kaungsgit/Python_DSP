@@ -1,3 +1,9 @@
+"""
+@author: Kaung Myat San Oo
+Specify sys_und_tst in either s or z form.
+Impulse response, frequency response, and pole-zero plots will be shown.
+"""
+
 import numpy as np
 import scipy.signal as sig
 import matplotlib.pyplot as plt
@@ -66,6 +72,8 @@ def s_plane_plot(sys, sfunc, limits=[3, 3, 10], nsamp=500):
     # cset = ax.contour(sigma, omega, hf.db(sfunc(s)), zdir='x')
 
     ax.set_zlim(-30, limits[2])
+    # ax.set_xlim(limits[0] / (2 * np.pi), -limits[0] / (2 * np.pi))
+    # ax.set_ylim(limits[0] / (2 * np.pi), -limits[0] / (2 * np.pi))
 
     fig.tight_layout()
 
@@ -94,7 +102,7 @@ def s_plot_val_func(num, den, s_para):
 
 # Handles both s and z domain
 # - z domain default Fs is 1
-# - s domain fstop can be set through fstop_c
+# - s domain fstop can be set through fstop_c_log_scale
 
 # T = np.pi / 100  # sampling period
 # Fs = 1 / T
@@ -149,17 +157,51 @@ gg = s_plot_val_func(sys_und_tst.num, sys_und_tst.den, x)
 # https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
 g = sp.lambdify([x], gg)
 
-fstop_c = 1e6
-# fstop_c = 1e6
+fstop_c_log_scale = 1e6
+# fstop_c_log_scale = 1e6
 
 nsamp_pos_neg = 1000
 nsamp_single = int(nsamp_pos_neg / 2)
 
+# pole zero plot
+poles, zeros = con.pzmap(sys_und_tst)
+plt.axis('equal')
+
+print(f'ploes are {poles}')
+print(f'zeros are {zeros}')
+
+# plt.figure()
+# plt.grid()
+# plt.axis('equal')
+# if len(poles) > 0:
+#     plt.plot(poles.real, poles.imag, 'bx')
+# if len(zeros) > 0:
+#     plt.plot(zeros.real, zeros.imag, 'bo')
+
+if sys_und_tst.isdtime():
+    cir_phase = np.linspace(0, 2 * np.pi, nsamp_single)
+    plt.plot(np.real(np.exp(1j * cir_phase)), np.imag(np.exp(1j * cir_phase)), 'r--')
+
+fstop_c_linear_scale = 0
 if sys_und_tst.isdtime():
     freq_resp_dB = s_plane_plot(sys_und_tst, g, limits=[-2, 2, 10], nsamp=nsamp_pos_neg)
 else:
-    freq_resp_dB = s_plane_plot(sys_und_tst, g, limits=[-fstop_c * 2 * np.pi, fstop_c * 2 * np.pi, 10],
+    # freq_resp_dB = s_plane_plot(sys_und_tst, g, limits=[-fstop_c_log_scale * 2 * np.pi, fstop_c_log_scale * 2 * np.pi, 10],
+    #                             nsamp=nsamp_pos_neg)
+    poles_zeros = np.concatenate((poles, zeros), axis=0)
+    # fstop_c_linear_scale = min(poles_zeros) + 0.3 * min(poles_zeros)
+    fstop_c_linear_scale = max(abs(poles_zeros)) + 0.5 * max(abs(poles_zeros))
+
+    freq_resp_dB = s_plane_plot(sys_und_tst, g,
+                                limits=[fstop_c_linear_scale * 2 * np.pi,
+                                        fstop_c_linear_scale * 2 * np.pi, 10],
                                 nsamp=nsamp_pos_neg)
+
+    # zoomed in plot
+    _ = s_plane_plot(sys_und_tst, g,
+                     limits=[fstop_c_linear_scale,
+                             fstop_c_linear_scale, 10],
+                     nsamp=nsamp_pos_neg)
 
 # impulse response
 t_cd, im_resp = con.impulse_response(sys_und_tst)
@@ -179,7 +221,7 @@ if sys_und_tst.isdtime():
     w = 2 * np.pi * np.logspace(start_exponent, np.log10(0.5),
                                 nsamp_single)
 else:
-    w = 2 * np.pi * np.logspace(start_exponent, np.log10(fstop_c), nsamp_single)
+    w = 2 * np.pi * np.logspace(start_exponent, np.log10(fstop_c_log_scale), nsamp_single)
 
 mag, phase, w = con.freqresp(sys_und_tst, w)
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
@@ -206,7 +248,7 @@ if sys_und_tst.isdtime():
     w = 2 * np.pi * np.logspace(start_exponent, np.log10(0.5),
                                 nsamp_single)
 else:
-    w = 2 * np.pi * np.logspace(start_exponent, np.log10(fstop_c), nsamp_single)
+    w = 2 * np.pi * np.logspace(start_exponent, np.log10(fstop_c_log_scale), nsamp_single)
 
 mag, phase, w = con.freqresp(sys_und_tst, w)
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
@@ -256,7 +298,7 @@ import plotly.graph_objects as go
 if sys_und_tst.isdtime():
     w = 2 * np.pi * np.linspace(0, 0.5, nsamp_single)
 else:
-    w = 2 * np.pi * np.linspace(0, fstop_c, nsamp_single)
+    w = 2 * np.pi * np.linspace(0, abs(fstop_c_linear_scale), nsamp_single)
 
 mag, phase, w = con.freqresp(sys_und_tst, w)
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
@@ -287,24 +329,5 @@ plt.xlabel('Frequency [Hz]')
 plt.ylabel('Mag [dB]')
 plt.title('Comparing freq response from s/z plane to con.freqresp')
 plt.legend()
-
-# pole zero plot
-poles, zeros = con.pzmap(sys_und_tst)
-plt.axis('equal')
-
-print(f'ploes are {poles}')
-print(f'zeros are {zeros}')
-
-# plt.figure()
-# plt.grid()
-# plt.axis('equal')
-# if len(poles) > 0:
-#     plt.plot(poles.real, poles.imag, 'bx')
-# if len(zeros) > 0:
-#     plt.plot(zeros.real, zeros.imag, 'bo')
-
-if sys_und_tst.isdtime():
-    cir_phase = np.linspace(0, 2 * np.pi, nsamp_single)
-    plt.plot(np.real(np.exp(1j * cir_phase)), np.imag(np.exp(1j * cir_phase)), 'r--')
 
 plt.show()

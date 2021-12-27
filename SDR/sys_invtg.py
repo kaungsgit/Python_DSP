@@ -213,8 +213,86 @@ plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
 
+
 # fig = px.line(x=t_cd, y=im_resp, labels={'x': 'Time [s]', 'y': 'Magnitude'})
 # fig.show()
+
+# bode plot details
+# - w or f
+# - log or linear x axis
+
+
+class BodePlot:
+
+    def __init__(self, is_angular_freq=False, is_xlog_scale=True, is_ylog_scale=False, title='Frequency Response'):
+        self.is_angular_freq = is_angular_freq
+        self.is_xlog_scale = is_xlog_scale
+        self.is_ylog_scale = is_ylog_scale
+        self.x_axis_label = 'Frequency [Hz]'
+        self.mag_label = 'Magnitude [dB]'
+        self.phase_label = 'Phase [Deg]'
+        self.title = title
+        pass
+
+    def convert_to_f(self, w):
+        if not self.is_angular_freq:
+            converted_freq = w / (2 * np.pi)
+            self.x_axis_label = 'Frequency [Hz]'
+        else:
+            converted_freq = w
+            self.x_axis_label = 'Frequency [rad/s]'
+        return converted_freq
+
+    def convert_to_linear(self):
+        if self.is_xlog_scale:
+            return 'semilogx'
+        else:
+            return 'plot'
+
+    def plot_(self, x, y):
+        if self.is_xlog_scale and self.is_ylog_scale:
+            plt.loglog(x, y)
+        elif self.is_xlog_scale:
+            plt.semilogx(x, y)
+        elif self.is_ylog_scale:
+            plt.semilogy(x, y)
+        else:
+            plt.plot(x, y)
+
+    @staticmethod
+    def calc_freq_response(sys_und_tst, w):
+        mag, phase, w = con.freqresp(sys_und_tst, w)
+
+        # freq response returns mag and phase as [[[mag]]], [[[phase]]]
+        # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
+        mag = np.squeeze(mag)
+        phase = np.squeeze(phase)
+
+        return mag, phase, w
+
+    def plot(self, sys_und_tst, w, title=''):
+        converted_freq = self.convert_to_f(w)
+
+        mag, phase, w = self.calc_freq_response(sys_und_tst, w)
+
+        plt.figure()
+        plt.subplot(2, 1, 1)
+
+        self.plot_(converted_freq, hf.db(mag))
+        # plt.semilogx(w / (2 * np.pi), hf.db(mag))
+        plt.grid()
+        plt.xlabel(self.x_axis_label)
+        plt.ylabel(self.mag_label)
+        plt.title((lambda x: x if x != '' else self.title)(title))
+
+        plt.subplot(2, 1, 2)
+        self.plot_(converted_freq, np.unwrap(phase) * 180 / np.pi)
+        # plt.semilogx(w / (2 * np.pi), np.unwrap(phase) * 180 / np.pi)
+        plt.grid()
+        plt.xlabel(self.x_axis_label)
+        plt.ylabel(self.phase_label)
+
+
 # plot frequency response log scale
 start_exponent = -9  # may need to adjust this to see correct reponse of very narrow dc notch filters
 if sys_und_tst.isdtime():
@@ -223,25 +301,8 @@ if sys_und_tst.isdtime():
 else:
     w = 2 * np.pi * np.logspace(start_exponent, np.log10(fstop_c_log_scale), nsamp_single)
 
-mag, phase, w = con.freqresp(sys_und_tst, w)
-# freq response returns mag and phase as [[[mag]]], [[[phase]]]
-# squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
-mag = np.squeeze(mag)
-phase = np.squeeze(phase)
-plt.figure()
-plt.subplot(2, 1, 1)
-plt.semilogx(w / (2 * np.pi), hf.db(mag))
-plt.grid()
-plt.xlabel('Frequency [Hz]')
-plt.ylabel('Magnitude [dB]')
-plt.title('Frequency Response')
-
-plt.subplot(2, 1, 2)
-plt.semilogx(w / (2 * np.pi), np.unwrap(phase) * 180 / np.pi)
-plt.grid()
-plt.xlabel('Frequency [Hz]')
-plt.ylabel('Phase [Deg]')
-
+bp = BodePlot(is_angular_freq=False, is_xlog_scale=True, is_ylog_scale=False)
+bp.plot(sys_und_tst, w, title='Freq Response, freq on log scale')
 # plot frequency response log scale, pi axis
 start_exponent = -9  # may need to adjust this to see correct reponse of very narrow dc notch filters
 if sys_und_tst.isdtime():
@@ -250,47 +311,8 @@ if sys_und_tst.isdtime():
 else:
     w = 2 * np.pi * np.logspace(start_exponent, np.log10(fstop_c_log_scale), nsamp_single)
 
-mag, phase, w = con.freqresp(sys_und_tst, w)
-# freq response returns mag and phase as [[[mag]]], [[[phase]]]
-# squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
-mag = np.squeeze(mag)
-phase = np.squeeze(phase)
-plt.figure()
-plt.subplot(2, 1, 1)
-plt.semilogx(w, hf.db(mag))
-plt.grid()
-plt.xlabel('Frequency [rad/s]')
-plt.ylabel('Magnitude [dB]')
-plt.title('Frequency Response')
-
-plt.subplot(2, 1, 2)
-plt.semilogx(w, np.unwrap(phase) * 180 / np.pi)
-plt.grid()
-plt.xlabel('Frequency [rad/s]')
-plt.ylabel('Phase [Deg]')
-
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-
-# # with plotly, it looks good but takes too long...
-# fig = make_subplots(rows=2, cols=1,
-#                     shared_xaxes=True,
-#                     vertical_spacing=0.02)
-#
-# fig.append_trace(go.Scatter(
-#     x=w / (2 * np.pi), y=hf.db(mag),
-# ), row=1, col=1)
-#
-# fig.append_trace(go.Scatter(
-#     x=w / (2 * np.pi), y=np.unwrap(phase) * 180 / np.pi,
-# ), row=2, col=1)
-#
-# fig.update_xaxes(title_text="Frequency [Hz]", type="log")
-# fig.update_yaxes(title_text="Mag [dB]", row=1, col=1)
-# fig.update_yaxes(title_text="Phase [Deg]", row=2, col=1)
-#
-# # fig.update_layout(height=600, width=600, title_text="Stacked Subplots")
-# fig.show()
+bp = BodePlot(is_angular_freq=True, is_xlog_scale=True, is_ylog_scale=False)
+bp.plot(sys_und_tst, w, title='Freq Response, omega on log scale')
 
 # plot frequency response linear scale
 # beware the difference between linspace and logspace and that we're using only 100 points total
@@ -300,24 +322,14 @@ if sys_und_tst.isdtime():
 else:
     w = 2 * np.pi * np.linspace(0, abs(fstop_c_linear_scale), nsamp_single)
 
+bp = BodePlot(is_angular_freq=False, is_xlog_scale=False)
+bp.plot(sys_und_tst, w, title='Freq Response, freq on linear scale')
+
 mag, phase, w = con.freqresp(sys_und_tst, w)
 # freq response returns mag and phase as [[[mag]]], [[[phase]]]
 # squeeze reduces this to a one dimensional array, optionally can use mag[0][0]
 mag = np.squeeze(mag)
 phase = np.squeeze(phase)
-plt.figure()
-plt.subplot(2, 1, 1)
-plt.plot(w / (2 * np.pi), hf.db(mag))
-plt.grid()
-plt.xlabel('Frequency [Hz]')
-plt.ylabel('Magnitude [dB]')
-plt.title('Frequency Response Linear scale')
-
-plt.subplot(2, 1, 2)
-plt.plot(w / (2 * np.pi), np.unwrap(phase) * 180 / np.pi)
-plt.grid()
-plt.xlabel('Frequency [Hz]')
-plt.ylabel('Phase [Deg]')
 
 plt.figure()
 if sys_und_tst.isdtime():

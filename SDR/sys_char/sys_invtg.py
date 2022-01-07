@@ -27,12 +27,30 @@ import matplotlib.cm as cm
 # import plotly.express as px
 
 
-def s_plane_plot(sys, sfunc, limits=[3, 3, 10], nsamp=500):
+def s_plane_plot(sys, sfunc, limits=[3, 3, 10], nsamp=500, labels=None):
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = plt.axes(projection='3d')
 
     # ax.set_yscale('log')
     # ax.set_xscale('log')
+    # ax.text(0, 1000, -3, "red", color='red')
+
+    if labels is not None:
+        # zdirs = (None, 'x', 'y, 'z', (1, 1, 0), (1, 1, 1))
+        zdirs = ('z', 'z', 'z', 'x', 'y', 'z')
+        # xs = (1, 4)
+        # ys = (2, 5)
+        # zs = (10, 3)
+
+        xs = [tple[0] for tple in labels]
+        ys = [tple[1] for tple in labels]
+        zs = [tple[2] for tple in labels]
+
+        # ax.scatter(xs, ys, zs, zorder=1)
+
+        for zdir, x, y, z in zip(zdirs, xs, ys, zs):
+            label = '(%d, %d, %d)' % (x, y, z)
+            ax.text(x, y, z, label)
 
     sigma = np.linspace(-limits[0], limits[0], nsamp)
     omega = sigma.copy()
@@ -199,9 +217,17 @@ else:
                      limits=[fstop_c_linear_scale,
                              fstop_c_linear_scale, 10],
                      nsamp=nsamp_pos_neg)
+
+    # _ = s_plane_plot(sys_und_test, lambda_s_func,
+    #                  limits=[fstop_c_linear_scale,
+    #                          fstop_c_linear_scale, 10],
+    #                  nsamp=nsamp_pos_neg, labels=[(0, 1002, -3), (0, -1002, -3)])
+
 # s plane function with dB for amplitude
 func_log_abs_s_func = 20 * sp.log(sp.Abs(symbolic_s_func), 10)
-eq1 = sp.Eq(func_log_abs_s_func, -3)
+
+dB_val_to_solve = -30
+eq1 = sp.Eq(func_log_abs_s_func, dB_val_to_solve)
 # real_sol = sp.solve([eq1, x]) # need to define x as real or imaginary
 func_input = 1j * 159.47 * 2 * np.pi
 out_freq_resp_dB = float(func_log_abs_s_func.subs(x, func_input))
@@ -216,9 +242,32 @@ y1, y2 = sp.symbols("y1 y2", real=True)
 y = y1 + sp.I * y2
 symbolic_s_func_2_var = s_plot_val_func(sys_und_test.num, sys_und_test.den, y)
 func_log_abs_s_func_2_var = 20 * sp.log(sp.Abs(symbolic_s_func_2_var), 10)
-eq1_2_var = sp.Eq(func_log_abs_s_func_2_var, -3)
+eq1_2_var = sp.Eq(func_log_abs_s_func_2_var, dB_val_to_solve)
 imag_sol_2_var = sp.solve([eq1_2_var, sp.re(y)])  # sp.re(y) means set real part to 0, find imag sol
 real_sol_2_var = sp.solve([eq1_2_var, sp.im(y)])  # sp.re(y) means set real part to 0, find imag sol
+
+from collections import OrderedDict
+
+combined_list = imag_sol_2_var + real_sol_2_var
+
+y1_y2_list = [dict1[y_sym] for dict1 in combined_list for y_sym in [y1, y2]]
+y1_y2_np_array = np.array(y1_y2_list).reshape(4, 2)
+solved_labels = np.insert(y1_y2_np_array, 2, np.ones(4) * dB_val_to_solve, axis=1)
+
+if sys_und_test.isdtime():
+    freq_resp_dB = s_plane_plot(sys_und_test, lambda_s_func, limits=[-2, 2, 10], nsamp=nsamp_pos_neg,
+                                labels=solved_labels)
+else:
+
+    _ = s_plane_plot(sys_und_test, lambda_s_func,
+                     limits=[fstop_c_linear_scale * 2,
+                             fstop_c_linear_scale * 2, 10],
+                     nsamp=nsamp_pos_neg, labels=solved_labels)
+
+# old way of getting coordinates
+# sorted_dict_list = [OrderedDict(sorted(dict1.items())) for dict1 in combined_list]
+# tuple_vales = [tuple(list(d.values()) + [dB_val_to_solve]) for d in sorted_dict_list]
+# data_points = imag_sol_2_var
 
 # wolfram alpha check
 # y1 - real part, y2 = imaginary

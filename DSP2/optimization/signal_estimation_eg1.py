@@ -12,17 +12,22 @@ nsamps = 20
 # t = np.arange(nsamps) * 1 / fs
 T = 1
 # n = np.arange(0, nsamps)
-sum_end = 40
-
+sum_end = 80
+num_terms_x_est = 10
+c = sp.IndexedBase('c')
+j, k, n = sp.symbols('j k n')
 c1, c2, c3, c4, c5 = sp.symbols('c1 c2 c3 c4 c5')
-n = sp.symbols('n')
+# n = sp.symbols('n')
 
 x_truth = 2 * sp.sin(0.05 * np.pi * n)
 # x_est = c1 + c2 * n * T + c3 * (n * T) ** 2
 
 x_est = c1 + c2 * n * T + c3 * (n * T) ** 2 + c4 * (n * T) ** 3 + c5 * (n * T) ** 4
+x_est_idx = (sp.Sum(c[k] * n ** (k - 1), (k, 1, num_terms_x_est))).doit()
 
 J = sp.concrete.Sum((x_truth - x_est) ** 2, (n, 1, sum_end))
+
+J_1 = (sp.Sum((x_truth - x_est_idx) ** 2, (n, 1, sum_end)))
 
 # @todo: indexed equations with derivatives
 # https://stackoverflow.com/questions/37647370/expand-index-notation-equation-using-sympy
@@ -57,5 +62,13 @@ x_est_1 = x_est.subs([(c1, res[c1]),
                       (c4, res[c4]),
                       (c5, res[c5])])
 
-sp.plot(x_est_1, x_truth, (n, 0, sum_end))
+c_list = [c[i] for i in range(1, num_terms_x_est + 1)]
+eq_list = [sp.diff(J_1, c[i]).doit() for i in range(1, num_terms_x_est + 1)]
+res_1 = sp.solve(eq_list, c_list)
+x_est_idx_1 = x_est_idx.subs(res_1)
+
+p1 = sp.plot(x_est_1, x_truth, (n, 0, sum_end))
+
+p2 = sp.plot(x_est_idx_1, x_truth, (n, 0, sum_end))
+
 pass

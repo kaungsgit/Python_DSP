@@ -17,7 +17,7 @@ from numpy.random import randn
 # print(X.rvs())            # Get a random sample from X
 # print(X.rvs(10))          # Get 10 random samples form X
 
-no_realz = 1
+no_realz = 3
 realz_len = 100000
 
 x = np.zeros([no_realz, realz_len])

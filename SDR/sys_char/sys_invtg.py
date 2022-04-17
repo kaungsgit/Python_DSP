@@ -149,17 +149,35 @@ Z1 = R1 / (1 + s * R1 * C1)
 Z2 = R2 / (1 + s * R2 * C2)
 # Z2 = 1 / (s * C3) * (R2 + 1 / (s * C2)) / (1 / (s * C3) + (R2 + 1 / (s * C2)))
 
-sys_und_test = (s) / (1000 + s)
+# sys_und_test = s / (1000 + s)
 # sys_und_test = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
 # sys_und_test = Z2 / (Z1 + Z2)
 
 # discrete
-# sys_und_test = 1 + z ** -1 # low pass fir filter
+# sys_und_test = 1 + z ** -1  # low pass fir filter
+# sys_und_test = 1 / (1 + z ** -1)  # inverse low pass fir filter
 # sys_und_test = 1 / (1 + 1e-3 / (z - 1))  # dc notch filter
 
 # sys_und_test = z / (z - 1)
 # sys_und_test = 1 / (z - 1)
 # sys_und_test = 1 + z ** -1 + z ** -2
+
+
+b_k = [1, 1, 1]  # FIR coeffs, aka b
+a_k = [1, 1]
+filter_eqn_b_z = 0
+for index, val in enumerate(b_k):
+    filter_eqn_b_z = filter_eqn_b_z + z ** (-index)
+
+filter_eqn_a_z = 0
+for index, val in enumerate(a_k):
+    filter_eqn_a_z = filter_eqn_a_z + z ** (-index)
+
+full_filter_eqn = filter_eqn_b_z / filter_eqn_a_z
+
+sys_und_test = full_filter_eqn
+# sys_und_test = 0.1 - 0.1 * z ** -1 + 0.05 * z ** -2 + z ** -3 + 0.05 * z ** -4  # low pass fir filter
+# sys_und_test = 1 + 1 * z ** -1 + 1 * z ** -2 + 1 * z ** -3  # low pass fir filter
 
 print(sys_und_test)
 simplified_sys = con.minreal(sys_und_test)
@@ -223,46 +241,49 @@ else:
     #                          fstop_c_linear_scale, 10],
     #                  nsamp=nsamp_pos_neg, labels=[(0, 1002, -3), (0, -1002, -3)])
 
-# s plane function with dB for amplitude
-func_log_abs_s_func = 20 * sp.log(sp.Abs(symbolic_s_func), 10)
+if sys_und_test == (s) / (1000 + s):
+    # @todo: check this to make sure it works with all use cases.
+    # ******************************************** labeling works only for this one transfer function for now ********************************************.
+    # s plane function with dB for amplitude
+    func_log_abs_s_func = 20 * sp.log(sp.Abs(symbolic_s_func), 10)
 
-dB_val_to_solve = -30
-eq1 = sp.Eq(func_log_abs_s_func, dB_val_to_solve)
-# real_sol = sp.solve([eq1, x]) # need to define x as real or imaginary
-func_input = 1j * 159.47 * 2 * np.pi
-out_freq_resp_dB = float(func_log_abs_s_func.subs(x, func_input))
-print(f'Freq response in dB when subbing {func_input}: {out_freq_resp_dB}')
-func_input = 2424
-out_freq_resp_dB = float(func_log_abs_s_func.subs(x, func_input))
-print(f'Freq response in dB when subbing {func_input}: {out_freq_resp_dB}')
+    dB_val_to_solve = -3
+    eq1 = sp.Eq(func_log_abs_s_func, dB_val_to_solve)
+    # real_sol = sp.solve([eq1, x]) # need to define x as real or imaginary
+    func_input = 1j * 159.47 * 2 * np.pi
+    out_freq_resp_dB = float(func_log_abs_s_func.subs(x, func_input))
+    print(f'Freq response in dB when subbing {func_input}: {out_freq_resp_dB}')
+    func_input = 2424
+    out_freq_resp_dB = float(func_log_abs_s_func.subs(x, func_input))
+    print(f'Freq response in dB when subbing {func_input}: {out_freq_resp_dB}')
 
-# sympy can't handle complex numbers well, so make it two variable equation (for complex variable) as mentioned here:
-# https://stackoverflow.com/questions/41386963/sympy-imaginary-number
-y1, y2 = sp.symbols("y1 y2", real=True)
-y = y1 + sp.I * y2
-symbolic_s_func_2_var = s_plot_val_func(sys_und_test.num, sys_und_test.den, y)
-func_log_abs_s_func_2_var = 20 * sp.log(sp.Abs(symbolic_s_func_2_var), 10)
-eq1_2_var = sp.Eq(func_log_abs_s_func_2_var, dB_val_to_solve)
-imag_sol_2_var = sp.solve([eq1_2_var, sp.re(y)])  # sp.re(y) means set real part to 0, find imag sol
-real_sol_2_var = sp.solve([eq1_2_var, sp.im(y)])  # sp.re(y) means set real part to 0, find imag sol
+    # sympy can't handle complex numbers well, so make it two variable equation (for complex variable) as mentioned here:
+    # https://stackoverflow.com/questions/41386963/sympy-imaginary-number
+    y1, y2 = sp.symbols("y1 y2", real=True)
+    y = y1 + sp.I * y2
+    symbolic_s_func_2_var = s_plot_val_func(sys_und_test.num, sys_und_test.den, y)
+    func_log_abs_s_func_2_var = 20 * sp.log(sp.Abs(symbolic_s_func_2_var), 10)
+    eq1_2_var = sp.Eq(func_log_abs_s_func_2_var, dB_val_to_solve)
+    imag_sol_2_var = sp.solve([eq1_2_var, sp.re(y)])  # sp.re(y) means set real part to 0, find imag sol
+    real_sol_2_var = sp.solve([eq1_2_var, sp.im(y)])  # sp.re(y) means set real part to 0, find imag sol
 
-from collections import OrderedDict
+    from collections import OrderedDict
 
-combined_list = imag_sol_2_var + real_sol_2_var
+    combined_list = imag_sol_2_var + real_sol_2_var
 
-y1_y2_list = [dict1[y_sym] for dict1 in combined_list for y_sym in [y1, y2]]
-y1_y2_np_array = np.array(y1_y2_list).reshape(4, 2)
-solved_labels = np.insert(y1_y2_np_array, 2, np.ones(4) * dB_val_to_solve, axis=1)
+    y1_y2_list = [dict1[y_sym] for dict1 in combined_list for y_sym in [y1, y2]]
+    y1_y2_np_array = np.array(y1_y2_list).reshape(4, 2)
+    solved_labels = np.insert(y1_y2_np_array, 2, np.ones(4) * dB_val_to_solve, axis=1)
 
-if sys_und_test.isdtime():
-    freq_resp_dB = s_plane_plot(sys_und_test, lambda_s_func, limits=[-2, 2, 10], nsamp=nsamp_pos_neg,
-                                labels=solved_labels)
-else:
+    if sys_und_test.isdtime():
+        freq_resp_dB = s_plane_plot(sys_und_test, lambda_s_func, limits=[-2, 2, 10], nsamp=nsamp_pos_neg,
+                                    labels=solved_labels)
+    else:
 
-    _ = s_plane_plot(sys_und_test, lambda_s_func,
-                     limits=[fstop_c_linear_scale * 2,
-                             fstop_c_linear_scale * 2, 10],
-                     nsamp=nsamp_pos_neg, labels=solved_labels)
+        _ = s_plane_plot(sys_und_test, lambda_s_func,
+                         limits=[fstop_c_linear_scale * 2,
+                                 fstop_c_linear_scale * 2, 10],
+                         nsamp=nsamp_pos_neg, labels=solved_labels)
 
 # old way of getting coordinates
 # sorted_dict_list = [OrderedDict(sorted(dict1.items())) for dict1 in combined_list]

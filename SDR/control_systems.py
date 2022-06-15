@@ -31,10 +31,10 @@ T = 1 / Fs
 # sysc = con.tf(1, [1, 2, 2, 0])
 # sysc = con.tf(1, [1, 0, 1])
 
-K = 1
-# sysc = K * 1 / (s ** 3 + 2 * s ** 2 + 2 * s + 0)
+K = 4.5
+sysc = K * 1 / (s ** 3 + 2 * s ** 2 + 2 * s + 0)
 # sysc = K * 1 / ((s + 1j) * (s - 1j))
-sysc = s / (s + 1000)
+# sysc = s / (s + 1000)
 
 # remove imag parts in coeffs of sysc.den and num
 # imag 0j present if using symbolic expression and root_locus function stuck in complex warning:
@@ -61,9 +61,18 @@ c2d_method = 'zoh'
 # ‘impulse’ Impulse-invariant discretization, currently not implemented
 # ‘tustin’ Bilinear (Tustin) approximation, only SISO ‘matched’ Matched pole-zero method, only SISO
 
+end_time = 20
+# time_array_c = np.arange(0, end_time, )
+
+nsamps = end_time // T
+tc = np.arange(nsamps) * T
+
+GCLs = con.minreal(sysc / (1 + sysc))
+tc_ir_gcl_s, ir_gcl_s = con.impulse_response(GCLs, tc)
+tc_sr_gcl_s, sr_gcl_s = con.step_response(GCLs, tc)
 
 # plot impulse response
-tc, youtc = con.impulse_response(sysc)
+tc, youtc = con.impulse_response(sysc, tc)
 # plt.figure()
 # plt.plot(tc, youtc)
 # plt.title("Impulse Response - Continuous System")
@@ -72,7 +81,7 @@ tc, youtc = con.impulse_response(sysc)
 # plt.grid()
 
 # plot step response
-tc_s, youtc_s = con.step_response(sysc)
+tc_s, youtc_s = con.step_response(sysc, tc)
 # plt.figure()
 # plt.plot(tc_s, youtc_s)
 # plt.title("Step Response - Continuous System")
@@ -122,11 +131,19 @@ print(1 / T * sysd1)
 print(sysd1)
 sysd = 1 / T * sysd1
 
+# construct discrete system of GCLs
+sysd1 = con.c2d(GCLs, T, method=c2d_method)
+print('Using sample system')
+print(1 / T * sysd1)
+print(sysd1)
+GCLz = 1 / T * sysd1
+
+
 # plot impulse response
 
 # create time vector as multiples of the sampling time
 # from 0 to 7 seconds to match analog impulse response
-nsamps = 7 // T
+nsamps = end_time // T
 td = np.arange(nsamps) * T
 
 td, youtd = con.impulse_response(sysd, td)
@@ -151,6 +168,10 @@ youtd_s = np.squeeze(youtd_s)
 # plt.grid()
 # plt.legend()
 
+# GCLz = sysd / (1 + sysd)
+td_ir_gcl_z, ir_gcl_z = con.impulse_response(GCLz, td)
+td_sr_gcl_z, sr_gcl_z = con.step_response(T * GCLz, td)
+
 # plot frequency response
 w = 2 * np.pi * np.logspace(-3, np.log10(0.5 * Fs), 100)
 magd, phased, w = con.freqresp(T * sysd, w)
@@ -169,8 +190,17 @@ phased = np.squeeze(phased)
 # comparing continuous to discrete
 plt.figure()
 plt.plot(tc, youtc, label='Continous')
-plt.plot(td, youtd, 'o', label='Discrete')
-plt.title("Impulse Response - Comparison")
+plt.plot(td, youtd, ls='--', label='Discrete')
+plt.title("GAIN OPEN LOOP Impulse Response - Comparison")
+plt.xlabel("Time [s]")
+plt.ylabel("Magnitude")
+plt.grid()
+plt.legend()
+
+plt.figure()
+plt.plot(tc_ir_gcl_s, ir_gcl_s, label='Continous')
+plt.plot(td_ir_gcl_z, ir_gcl_z, ls='--', label='Discrete')
+plt.title("GAIN CLOSED LOOP Impulse Response - Comparison")
 plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
@@ -178,8 +208,17 @@ plt.legend()
 
 plt.figure()
 plt.plot(tc_s, youtc_s, label='Continous')
-plt.plot(td_s, youtd_s, 'o', label='Discrete')
-plt.title("Step Response - Comparison")
+plt.plot(td_s, youtd_s, ls='--', label='Discrete')
+plt.title("GAIN OPEN LOOP Step Response - Comparison")
+plt.xlabel("Time [s]")
+plt.ylabel("Magnitude")
+plt.grid()
+plt.legend()
+
+plt.figure()
+plt.plot(tc_sr_gcl_s, sr_gcl_s, label='Continous')
+plt.plot(td_sr_gcl_z, sr_gcl_z, ls='--', label='Discrete')
+plt.title("GAIN OPEN LOOP Step Response - Comparison")
 plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
@@ -239,7 +278,7 @@ plt.figure()
 real, imag, freq = con.nyquist_plot(sysc)
 scale = K / 2 + 1
 plt.axis([-scale, scale, -scale, scale])
-plt.title('Nyquist plot discrete')
+plt.title('Nyquist plot cont')
 
 # plt.figure()
 rlist, klist = con.root_locus(sysc, grid=True)

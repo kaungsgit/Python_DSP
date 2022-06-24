@@ -149,6 +149,16 @@ Z1 = R1 / (1 + s * R1 * C1)
 Z2 = R2 / (1 + s * R2 * C2)
 # Z2 = 1 / (s * C3) * (R2 + 1 / (s * C2)) / (1 / (s * C3) + (R2 + 1 / (s * C2)))
 
+# https://qr.ae/pvoeeP
+#
+GF = 10 * (s + 10) / (s * (s + 2))  # forward gain, type is 1, looking at only GF.
+GFB = s + 4  # feedback gain
+GOL = GF * GFB  # open loop
+GCL = GF / (
+        1 + GOL)  # closed loop, poles of GCL no longer has a pole at 0, type was reduced from 1 (forward gain) to 0.
+
+sys_und_test = GCL
+
 # sys_und_test = s / (1000 + s)
 # sys_und_test = 1 / (s ** 3 + 2 * s ** 2 + 2 * s)
 # sys_und_test = Z2 / (Z1 + Z2)
@@ -175,7 +185,7 @@ for index, val in enumerate(a_k):
 
 full_filter_eqn = filter_eqn_b_z / filter_eqn_a_z
 
-sys_und_test = full_filter_eqn
+# sys_und_test = full_filter_eqn
 # sys_und_test = 0.1 - 0.1 * z ** -1 + 0.05 * z ** -2 + z ** -3 + 0.05 * z ** -4  # low pass fir filter
 # sys_und_test = 1 + 1 * z ** -1 + 1 * z ** -2 + 1 * z ** -3  # low pass fir filter
 
@@ -183,6 +193,9 @@ print(sys_und_test)
 simplified_sys = con.minreal(sys_und_test)
 print(simplified_sys)
 sys_und_test = simplified_sys
+
+print(f'sys_und_test poles {sys_und_test.pole()}')
+print(f'sys_und_test zeros {sys_und_test.zero()}')
 
 symbolic_s_func = s_plot_val_func(sys_und_test.num, sys_und_test.den, x)
 

@@ -32,6 +32,9 @@ plt.plot(t, err, '-o', label='err')
 
 plt.legend()
 
+# reference block diagram
+# https://app.diagrams.net/#G1Bc8BfgYntU17RTXTA7-rz_9_yFm4lMJE
+
 input1 = 1
 y_pre = 0
 error = 0
@@ -39,11 +42,14 @@ out_array = []
 error_array = []
 # Dan's way of modelling
 for i in range(num_samples):
+    # synchronous operation
     y_out = y_pre
 
+    # asynchronous operation, start with assigned synchronous output value
+    error = input1 - y_out  # this equation must read y_out (output of DFF), which was set in the line above.
     y_pre = error * kp
-    error = input1 - y_out
 
+    # create output data vector
     error_array.append(error)
     out_array.append(y_out)
 

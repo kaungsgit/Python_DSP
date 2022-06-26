@@ -13,8 +13,6 @@ class Connector:
         self.value = 0
         self.ready = 0
 
-    # def __str__(self):
-
     def connect(self, inputs: Union[Connector, List[Connector]]):
         if not isinstance(inputs, list):
             inputs = [inputs]
@@ -42,14 +40,14 @@ class Block:
             self.__class__.count += 1
 
 
-class Block2(Block):
+class Block1In1Out(Block):
     def __init__(self, name=None):
         super().__init__(name)
         self.inpath = Connector(self, 'A')
         self.outpath = Connector(self, 'B')
 
 
-class Block3(Block):
+class Block2In1Out(Block):
     def __init__(self, name=None):
         super().__init__(name)
         self.inpath1 = Connector(self, 'A')
@@ -57,74 +55,38 @@ class Block3(Block):
         self.outpath = Connector(self, 'C')
 
 
-class Gain(Block2):
+class Gain(Block1In1Out):
 
     def __init__(self, gain, name=None):
         super().__init__(name)
-        # self.inpath = Connector(self, 'A')
-        # self.outpath = Connector(self, 'B')
         self.gain = gain
 
     def compute(self):
         self.outpath.set(self.inpath.value * self.gain)
 
 
-class Delay(Block2):
+class Delay(Block1In1Out):
     def __init__(self, name=None):
         super().__init__(name)
-
-        # self.inpath = Connector(self, 'A')
-        # self.outpath = Connector(self, 'B')
-        # self.inval = 0
-        # self.outval = 0
 
     def compute(self):
         self.outpath.set(self.inpath.value)
 
 
-class Sum(Block3):
+class Sum(Block2In1Out):
     def __init__(self, name=None):
         super().__init__(name)
-
-        # self.inpath1 = Connector(self, 'A')
-        # self.inpath2 = Connector(self, 'B')
-        # self.outpath = Connector(self, 'C')
 
     def compute(self):
         self.outpath.set(self.inpath1.value + self.inpath2.value)
 
 
-class Subtraction(Block3):
+class Subtraction(Block2In1Out):
     def __init__(self, name=None):
         super().__init__(name)
-        # self.inpath1 = Connector(self, 'A')
-        # self.inpath2 = Connector(self, 'B')
-        # self.outpath = Connector(self, 'C')
 
     def compute(self):
         self.outpath.set(self.inpath1.value - self.inpath2.value)
-
-
-num_samples = 200
-x = np.ones(num_samples)
-
-# study how to model neural networks from scratch
-# this should be similar.
-# http://openbookproject.net/courses/python4fun/logic.html
-# https://virantha.com/2017/09/22/hardware-simulation-using-curio/
-# https://simupy.readthedocs.io/en/latest/overview.html
-# https://python.plainenglish.io/how-to-build-simulation-models-with-python-219b33ce9625
-# https://www.youtube.com/watch?v=Os7ppbJh4To
-# https://pypi.org/project/bdsim/
-
-# simulink alternative
-# https://www.collimator.ai/solutions/control-systems
-
-gain_in, gain_out, del_out = 0, 0, 0
-
-Ts = 0.1
-stop_time = num_samples * Ts
-t = np.arange(0, stop_time, Ts)
 
 
 class ControlLoop(ABC):
@@ -159,12 +121,12 @@ class ControlLoop(ABC):
         executed_blocks = []
         while len(executed_blocks) < num_blocks_wo_delays:
             for block in blocks_wo_delays_copy:
-                if isinstance(block, Block2):
+                if isinstance(block, Block1In1Out):
                     if block.inpath.ready:
                         block.compute()
                         executed_blocks.append(block)
 
-                elif isinstance(block, Block3):
+                elif isinstance(block, Block2In1Out):
                     if block.inpath1.ready and block.inpath2.ready:
                         block.compute()
                         executed_blocks.append(block)
@@ -179,18 +141,18 @@ class ControlLoop(ABC):
 
         self.create_run_order()
 
-        delay1_out_arr = []
-        err = []
+        out_arr = []  # @todo: add logging for any given node
+        err_arr = []
         for i in input_data:
             self.input_node.set(i)
 
             for j in self.execution_order:
                 j.compute()
 
-            delay1_out_arr.append(self.output_node.value)
-            err.append(self.error_node.value)
+            out_arr.append(self.output_node.value)
+            err_arr.append(self.error_node.value)
 
-        return delay1_out_arr, err
+        return out_arr, err_arr
 
 
 class Type1CLExample(ControlLoop):
@@ -209,12 +171,9 @@ class Type1CLExample(ControlLoop):
         self.sub.outpath.connect([self.sum1.inpath1, self.gain1.inpath])
         self.sum1.outpath.connect(([self.delay2.inpath, self.gain2.inpath]))
         self.delay2.outpath.connect(self.sum1.inpath2)
-
         self.gain1.outpath.connect(self.sum2.inpath1)
         self.gain2.outpath.connect(self.sum2.inpath2)
-
         self.sum2.outpath.connect(self.delay1.inpath)
-
         self.delay1.outpath.connect(self.sub.inpath2)
 
         # specify input, output, and error nodes
@@ -246,26 +205,46 @@ class Type0CLExample(ControlLoop):
         self.error_node = self.sub.outpath
 
 
-t1_cl = Type1CLExample()
-delay1_out_arr, err = t1_cl.run(x)
+if __name__ == '__main__':
+    num_samples = 200
+    x = np.ones(num_samples)
 
-plt.figure()
-plt.plot(t, delay1_out_arr, '-o', label='delay_out')
-plt.plot(t, err, '-o', label='error')
-plt.title('Type1 Control Loop')
-plt.legend()
+    Ts = 0.1
+    stop_time = num_samples * Ts
+    t = np.arange(0, stop_time, Ts)
 
-t0_cl = Type0CLExample()
-delay1_out_arr, err = t0_cl.run(x)
-plt.figure()
-plt.plot(t, delay1_out_arr, '-o', label='delay_out')
-plt.plot(t, err, '-o', label='error')
-plt.title('Type0 Control Loop')
-plt.legend()
+    t1_cl = Type1CLExample()
+    delay1_out_arr, err = t1_cl.run(x)
 
-plt.show()
+    plt.figure()
+    plt.plot(t, delay1_out_arr, '-o', label='delay_out')
+    plt.plot(t, err, '-o', label='error')
+    plt.title('Type1 Control Loop')
+    plt.legend()
+
+    t0_cl = Type0CLExample()
+    delay1_out_arr, err = t0_cl.run(x)
+    plt.figure()
+    plt.plot(t, delay1_out_arr, '-o', label='delay_out')
+    plt.plot(t, err, '-o', label='error')
+    plt.title('Type0 Control Loop')
+    plt.legend()
+
+    plt.show()
 
 # # *********************************** Sim without ControlLoop class  ***********************************
+# study how to model neural networks from scratch
+# this should be similar.
+# http://openbookproject.net/courses/python4fun/logic.html
+# https://virantha.com/2017/09/22/hardware-simulation-using-curio/
+# https://simupy.readthedocs.io/en/latest/overview.html
+# https://python.plainenglish.io/how-to-build-simulation-models-with-python-219b33ce9625
+# https://www.youtube.com/watch?v=Os7ppbJh4To
+# https://pypi.org/project/bdsim/
+
+# simulink alternative
+# https://www.collimator.ai/solutions/control-systems
+
 # gain1 = Gain(0.5)
 # delay1 = Delay()
 # delay2 = Delay()

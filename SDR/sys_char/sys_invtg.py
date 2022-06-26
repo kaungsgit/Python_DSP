@@ -320,6 +320,16 @@ plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
 plt.grid()
 
+# step response
+t_cd, step_resp = con.step_response(sys_und_test)
+
+plt.figure()
+plt.plot(t_cd, step_resp, '-o')
+plt.title("Step Response")
+plt.xlabel("Time [s]")
+plt.ylabel("Magnitude")
+plt.grid()
+
 
 # fig = px.line(x=t_cd, y=im_resp, labels={'x': 'Time [s]', 'y': 'Magnitude'})
 # fig.show()

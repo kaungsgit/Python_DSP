@@ -5,14 +5,15 @@ import numpy.random as random
 import komm
 
 import pprint as pp
+import csv
 
 # QAM waveform with phase offset
 
-qam = komm.QAModulation(16)
+qam = komm.QAModulation(4)
 
 # create dictionary for mapping data words to symbols (matching what we created earlier above
 # to demonstrate utility of komm library)
-const_map = dict(zip(qam.labeling, qam.constellation))
+const_map = dict(zip(np.array([1, 3, 0, 2]), qam.constellation))
 print("\n")
 print("Dictionary for Constellation Mapping for Symbols:")
 pp.pprint(const_map)
@@ -28,7 +29,20 @@ sym_rate = 1e3
 sym_length = 26  # duration of impulse response
 oversamp = 4  # samples per symbol
 alpha = 0.5  # Roll-off factor (set between 0 and 1)
-data = np.int8(16 * random.rand(num_symb))
+
+random.seed(0)
+data = np.int8(4 * random.rand(num_symb))
+
+# open the file in the write mode
+with open('csv_data.csv', 'w', newline='') as f:
+    # create the csv writer
+    writer = csv.writer(f)
+
+    for val in data:
+        writer.writerow([val])
+    # # write a row to the csv file
+    # writer.writerow(data)
+
 symbols = [const_map[symbol] for symbol in data]
 
 pulse = komm.RaisedCosinePulse(rolloff=alpha, length_in_symbols=sym_length)
@@ -43,6 +57,8 @@ tx[::oversamp] = symbols
 # pass data through tx pulse shaping filter:
 
 tx_shaped = sig.lfilter(coeff, 1, tx)
+
+# tx_shaped = 4 * tx_shaped
 
 # eye diagram
 
@@ -85,6 +101,8 @@ plt.plot(xaxis[::upsample], eye[:, transient:transient + windows][::upsample], '
 plt.title("Eye Diagram")
 plt.xlabel('Samples')
 plt.grid()
+
+
 # plt.show()
 
 
@@ -95,19 +113,19 @@ plt.grid()
 # than what would be used in a dynamic loop which would operate
 # sample by sample
 
-def ted(tx, n, offset):
+def ted(tx_local, n, offset):
     '''
     tx: oversampled complex waveform
     n: oversampling rate
     offset: sample offset delay
     '''
     # downsample to 2 samples per symbol with timing offset
-    tx2 = tx[offset::int(n / 2)]
+    tx_2sps = tx_local[offset::int(n / 2)]
 
     # generate a prompt, late and early each offset by 1 sample
-    late = tx2[2:]
-    early = tx2[:-2]
-    prompt = tx2[1:-1]
+    late = tx_2sps[2:]
+    early = tx_2sps[:-2]
+    prompt = tx_2sps[1:-1]
 
     # compute and return the Garnder Error result
     return np.real(np.conj(prompt[::2]) * (late - early)[::2])
@@ -131,26 +149,36 @@ plt.ylabel('Measured Timing Error')
 plt.grid(True)
 
 
-def mandm(tx, n, offset):
+def mandm(tx_local, n, offset):
     '''
     tx: oversampled waveform
     n: oversampling rate
     offset: sample offset delay
     '''
     # downsample to 1 sample per symbol with timing offset
-    tx2 = tx[offset::n]
+    tx_1sps = tx_local[offset::n]
 
     # compute M&M on real axis
-    sign_tx2_real = np.sign(np.real(tx2))
-    mm_real = np.real(tx2[1:]) * sign_tx2_real[:-1] - np.real(tx2[:-1]) * sign_tx2_real[1:]
+    sign_tx2_real = np.sign(np.real(tx_1sps))
+    mm_real = np.real(tx_1sps[1:]) * sign_tx2_real[:-1] - np.real(tx_1sps[:-1]) * sign_tx2_real[1:]
     # compute M&M on imag axis
-    sign_tx2_imag = (np.sign(np.imag(tx2)))
-    mm_imag = np.imag(tx2[1:]) * sign_tx2_imag[:-1] - np.imag(tx2[:-1]) * sign_tx2_imag[1:]
+    sign_tx2_imag = (np.sign(np.imag(tx_1sps)))
+    mm_imag = np.imag(tx_1sps[1:]) * sign_tx2_imag[:-1] - np.imag(tx_1sps[:-1]) * sign_tx2_imag[1:]
 
     return mm_real + mm_imag
 
 
 # increment through each offset and compute the average timing error
+
+
+# test plots
+plt.figure()
+offset_del = 56
+plt.plot(np.real(tx_resamp[offset_del::4*16]), np.imag(tx_resamp[offset_del::4*16]), 'o')
+# plt.plot(np.real(tx_shaped[51::]), 'o-', label='shaped')
+# plt.legend()
+# plt.show(block=True)
+
 mandm_results = [np.mean(mandm(tx_resamp, upsample * oversamp, offset)) for offset in offsets]
 
 plt.figure()
@@ -162,4 +190,21 @@ plt.xlabel('Sample Offset')
 plt.ylabel('Measured Timing Error')
 plt.grid(True)
 
+offset_num = 0
+plt.figure()
+print(f'Offset {offset_num} is {offsets[offset_num]}')
+res_0 = mandm(tx_resamp, upsample * oversamp, offsets[offset_num])
+plt.plot(res_0)
+
+offset_num = 5
+plt.figure()
+print(f'Offset {offset_num} is {offsets[offset_num]}')
+res_0 = mandm(tx_resamp, upsample * oversamp, offsets[offset_num])
+plt.plot(res_0)
+
+plt.figure()
+plt.plot(np.real(tx_shaped))
+
 plt.show()
+
+pass

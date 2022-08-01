@@ -32,9 +32,10 @@ T = 1 / Fs
 # sysc = con.tf(1, [1, 0, 1])
 
 K = 4.5
+tau1 = 3e-3
 sysc = K * 1 / (s ** 3 + 2 * s ** 2 + 2 * s + 0)
 # sysc = K * 1 / ((s + 1j) * (s - 1j))
-# sysc = s / (s + 1000)
+# sysc = 1 / (s*tau1)
 
 # remove imag parts in coeffs of sysc.den and num
 # imag 0j present if using symbolic expression and root_locus function stuck in complex warning:
@@ -126,18 +127,17 @@ phasec = np.squeeze(phasec)
 
 # construct discrete system
 sysd1 = con.c2d(sysc, T, method=c2d_method)
-print('Using sample system')
+print('Using sample system, sysc is...')
 print(1 / T * sysd1)
 print(sysd1)
 sysd = 1 / T * sysd1
 
 # construct discrete system of GCLs
 sysd1 = con.c2d(GCLs, T, method=c2d_method)
-print('Using sample system')
+print('Using sample system, GCLs is...')
 print(1 / T * sysd1)
 print(sysd1)
 GCLz = 1 / T * sysd1
-
 
 # plot impulse response
 

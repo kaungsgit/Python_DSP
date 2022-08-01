@@ -5,7 +5,7 @@ import scipy.signal as sig
 from scipy.linalg import toeplitz
 import scipy.fftpack as fft
 from numpy.random import randn
-from spectrum import aryule
+# from spectrum import aryule #@todo: issues with installing this spectrum module...
 import pylab as pl
 
 # https://mpastell.com/pweave/_downloads/AR_yw.html (something similar)
@@ -47,12 +47,12 @@ a_est_w_a0 = np.append(1, a_est[:20])
 # y = sig.lfilter([1], a, pl.randn(1, nsamps))
 # inverting big toeplitz matrix can be done with some smart algo
 # https://www.youtube.com/watch?v=AOX1ifbRfBU&ab_channel=AdamKashlak
-ar, variance, coeff_reflection = aryule(filtered_noise, 20)
+# ar, variance, coeff_reflection = aryule(filtered_noise, 20)
 
 plt.figure()
 plt.plot(a, label='original coeffs')
 plt.plot(a_est_w_a0, label='estimated coeffs, manual, inverting full size toeplitz')
-plt.plot(np.append(1, ar), label='estimated coeffs, aryule')
+# plt.plot(np.append(1, ar), label='estimated coeffs, aryule')
 plt.title('AR Coeffs Comparison')
 plt.legend()
 plt.show()

@@ -190,7 +190,7 @@ phased = np.squeeze(phased)
 # comparing continuous to discrete
 plt.figure()
 plt.plot(tc, youtc, label='Continous')
-plt.plot(td, youtd, ls='--', label='Discrete')
+plt.plot(td, youtd / Fs, ls='--', label='Discrete')
 plt.title("GAIN OPEN LOOP Impulse Response - Comparison")
 plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
@@ -199,7 +199,7 @@ plt.legend()
 
 plt.figure()
 plt.plot(tc_ir_gcl_s, ir_gcl_s, label='Continous')
-plt.plot(td_ir_gcl_z, ir_gcl_z, ls='--', label='Discrete')
+plt.plot(td_ir_gcl_z, ir_gcl_z / Fs, ls='--', label='Discrete')
 plt.title("GAIN CLOSED LOOP Impulse Response - Comparison")
 plt.xlabel("Time [s]")
 plt.ylabel("Magnitude")
@@ -266,8 +266,10 @@ plt.ylabel('Phase [Deg]')
 # plt.title('Frequency Response - Comparison')
 plt.legend()
 
+plt.figure()
 con.pzmap(sysc, title='Cont System Laplace plane')
 
+plt.figure()
 con.pzmap(sysd, title='Discrete System Z plane')
 if sysd.isdtime():
     cir_phase = np.linspace(0, 2 * np.pi, 500)
@@ -275,22 +277,22 @@ if sysd.isdtime():
     plt.axis('equal')
 
 plt.figure()
-real, imag, freq = con.nyquist_plot(sysc)
+con.nyquist_plot(sysc)
 scale = K / 2 + 1
 plt.axis([-scale, scale, -scale, scale])
 plt.title('Nyquist plot cont')
 
-# plt.figure()
+plt.figure()
 rlist, klist = con.root_locus(sysc, grid=True)
 plt.title('Root Locus cont')
 
 plt.figure()
-real, imag, freq = con.nyquist_plot(T * sysd, omega=w)
+con.nyquist_plot(T * sysd, omega=w)
 scale = K / 2 + 1
 plt.axis([-scale, scale, -scale, scale])
 plt.title('Nyquist plot discrete')
 
-# plt.figure()
+plt.figure()
 rlist, klist = con.root_locus(T * sysd, xlim=(-2, 2), ylim=(-2, 2), grid=True)
 plt.title('Root Locus discrete')
 if sysd.isdtime():

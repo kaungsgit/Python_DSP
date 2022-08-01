@@ -16,17 +16,17 @@ K = 1
 GOLz = con.tf(0.83155 * K, [1, -1, 0], 1)
 
 plt.figure()
-real, imag, freq = con.nyquist_plot(GOLz, omega=np.linspace(0, np.pi, 1000))
+con.nyquist_plot(GOLz, omega=np.linspace(0, np.pi, 1000))
 plt.title('Nyquist plot of GOL with K={}'.format(K))
 plt.axis([-1.4, .5, -10, 10])
 
 # Modified Nyquist Plot:
 # A Nyquist Plot of -1/Gol will show the range of K for stability
 
-plt.figure()
-real, imag, freq = con.nyquist_plot(-1 / GOLz, omega=np.linspace(0, np.pi, 1000))
-plt.title('Modified Nyquist plot of -1/GOL with K={} \nRange of stability for K is 0-1.2'.format(K))
-plt.axis([-2.5, 1.5, -2.5, 2.5])
+# plt.figure() #@todo: find out why it errors out...
+# con.nyquist_plot(-1 / GOLz, omega=np.linspace(0, np.pi, 1000))
+# plt.title('Modified Nyquist plot of -1/GOL with K={} \nRange of stability for K is 0-1.2'.format(K))
+# plt.axis([-2.5, 1.5, -2.5, 2.5])
 
 rlist, klist = con.root_locus(GOLz, xlim=(-3, 3), ylim=(-3, 3), grid=True, Plot=True)
 cir_phase = np.linspace(0, 2 * np.pi, 500)

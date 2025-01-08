@@ -8,7 +8,7 @@ Press any keyboard key to pause the animation
 
 """
 
-# @todo
+# @todo test
 # reorganize the object oriented scheme
 
 import matplotlib.pyplot as plt
